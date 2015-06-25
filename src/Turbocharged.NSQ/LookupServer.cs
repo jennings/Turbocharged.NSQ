@@ -11,12 +11,12 @@ using Newtonsoft.Json.Linq;
 
 namespace Turbocharged.NSQ
 {
-    public class LookupdConnection
+    public class LookupServer
     {
         readonly WebClient _webClient = new WebClient();
         readonly SemaphoreSlim _webClientLock = new SemaphoreSlim(1, 1);
 
-        public LookupdConnection(string host, int port)
+        public LookupServer(string host, int port)
         {
             _webClient.BaseAddress = new UriBuilder()
             {
@@ -26,13 +26,13 @@ namespace Turbocharged.NSQ
             }.ToString();
         }
 
-        public Task<List<NsqdAddress>> LookupAsync(Topic topic)
+        public Task<List<NsqAddress>> LookupAsync(Topic topic)
         {
             return RequestListAsync("/lookup?topic=" + topic, response =>
             {
                 return
                     ((JArray)response["data"]["producers"])
-                    .Select(producer => new NsqdAddress
+                    .Select(producer => new NsqAddress
                     {
                         BroadcastAddress = (string)producer["broadcast_address"],
                         HostName = (string)producer["hostname"],
@@ -60,6 +60,57 @@ namespace Turbocharged.NSQ
                 return response["data"]["channels"]
                     .Select(t => new Channel((string)t))
                     .ToList();
+            });
+        }
+
+        public Task<List<NsqAddress>> NodesAsync()
+        {
+            return RequestListAsync("/nodes", response =>
+            {
+                return
+                    ((JArray)response["data"]["producers"])
+                    .Select(producer => new NsqAddress
+                    {
+                        BroadcastAddress = (string)producer["broadcast_address"],
+                        HostName = (string)producer["hostname"],
+                        HttpPort = (int)producer["http_port"],
+                        TcpPort = (int)producer["tcp_port"],
+                    })
+                    .ToList();
+            });
+        }
+
+        public Task DeleteTopicAsync(Topic topic)
+        {
+            return RequestAsync("/delete_topic?topic=" + topic, _ => true);
+        }
+
+        public Task DeleteChannelAsync(Topic topic, Channel channel)
+        {
+            var url = "/delete_channel?topic=" + topic + "&channel=" + channel;
+            return RequestAsync(url, _ => true);
+        }
+
+        public Task TombstoneTopicProducerAsync(Topic topic, NsqAddress producer)
+        {
+            var url = string.Format("/tombstone_topic_producer?topic={0}&node={1}:{2}", topic, producer.BroadcastAddress, producer.HttpPort);
+            return RequestAsync(url, _ => true);
+        }
+
+        public Task<Version> VersionAsync()
+        {
+            return RequestAsync("/info", response =>
+            {
+                var version = (string)response["data"]["version"];
+                return new Version(version);
+            });
+        }
+
+        public Task<bool> PingAsync()
+        {
+            return RequestAsync("/ping", response =>
+            {
+                return (string)response == "OK";
             });
         }
 

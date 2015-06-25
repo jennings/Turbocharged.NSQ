@@ -55,28 +55,4 @@ namespace Turbocharged.NSQ
             return new Channel(channel);
         }
     }
-
-    public class LookupdAddress
-    {
-        public string HostName { get; set; }
-        public int HttpPort { get; set; }
-
-        public override string ToString()
-        {
-            return "HostName = " + HostName + ", HttpPort = " + HttpPort;
-        }
-    }
-
-    public class NsqdAddress
-    {
-        public string BroadcastAddress { get; set; }
-        public string HostName { get; set; }
-        public int HttpPort { get; set; }
-        public int TcpPort { get; set; }
-
-        public override string ToString()
-        {
-            return "BroadcastAddress = " + BroadcastAddress + ", TcpPort = " + TcpPort;
-        }
-    }
 }

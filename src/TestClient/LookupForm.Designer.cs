@@ -35,17 +35,29 @@
             this.LookupButton = new System.Windows.Forms.Button();
             this.ResultsTextBox = new System.Windows.Forms.TextBox();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
-            this.label3 = new System.Windows.Forms.Label();
             this.LookupTopic = new System.Windows.Forms.TextBox();
+            this.label3 = new System.Windows.Forms.Label();
             this.groupBox2 = new System.Windows.Forms.GroupBox();
             this.TopicsButton = new System.Windows.Forms.Button();
             this.groupBox3 = new System.Windows.Forms.GroupBox();
             this.ChannelsTopic = new System.Windows.Forms.TextBox();
             this.label5 = new System.Windows.Forms.Label();
             this.ChannelsButton = new System.Windows.Forms.Button();
+            this.groupBox4 = new System.Windows.Forms.GroupBox();
+            this.DeleteChannelChannel = new System.Windows.Forms.TextBox();
+            this.label6 = new System.Windows.Forms.Label();
+            this.DeleteChannelTopic = new System.Windows.Forms.TextBox();
+            this.label4 = new System.Windows.Forms.Label();
+            this.DeleteChannelButton = new System.Windows.Forms.Button();
+            this.groupBox5 = new System.Windows.Forms.GroupBox();
+            this.DeleteTopicTopic = new System.Windows.Forms.TextBox();
+            this.label8 = new System.Windows.Forms.Label();
+            this.DeleteTopicButton = new System.Windows.Forms.Button();
             this.groupBox1.SuspendLayout();
             this.groupBox2.SuspendLayout();
             this.groupBox3.SuspendLayout();
+            this.groupBox4.SuspendLayout();
+            this.groupBox5.SuspendLayout();
             this.SuspendLayout();
             // 
             // Host
@@ -114,15 +126,6 @@
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "/lookup";
             // 
-            // label3
-            // 
-            this.label3.AutoSize = true;
-            this.label3.Location = new System.Drawing.Point(6, 31);
-            this.label3.Name = "label3";
-            this.label3.Size = new System.Drawing.Size(47, 20);
-            this.label3.TabIndex = 8;
-            this.label3.Text = "Topic";
-            // 
             // LookupTopic
             // 
             this.LookupTopic.Font = new System.Drawing.Font("Consolas", 8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
@@ -131,6 +134,15 @@
             this.LookupTopic.Size = new System.Drawing.Size(278, 26);
             this.LookupTopic.TabIndex = 8;
             this.LookupTopic.Text = "foo";
+            // 
+            // label3
+            // 
+            this.label3.AutoSize = true;
+            this.label3.Location = new System.Drawing.Point(6, 31);
+            this.label3.Name = "label3";
+            this.label3.Size = new System.Drawing.Size(47, 20);
+            this.label3.TabIndex = 8;
+            this.label3.Text = "Topic";
             // 
             // groupBox2
             // 
@@ -192,11 +204,113 @@
             this.ChannelsButton.UseVisualStyleBackColor = true;
             this.ChannelsButton.Click += new System.EventHandler(this.ChannelsButton_Click);
             // 
+            // groupBox4
+            // 
+            this.groupBox4.Controls.Add(this.DeleteChannelChannel);
+            this.groupBox4.Controls.Add(this.label6);
+            this.groupBox4.Controls.Add(this.DeleteChannelTopic);
+            this.groupBox4.Controls.Add(this.label4);
+            this.groupBox4.Controls.Add(this.DeleteChannelButton);
+            this.groupBox4.Location = new System.Drawing.Point(16, 476);
+            this.groupBox4.Name = "groupBox4";
+            this.groupBox4.Size = new System.Drawing.Size(572, 94);
+            this.groupBox4.TabIndex = 11;
+            this.groupBox4.TabStop = false;
+            this.groupBox4.Text = "/delete_channel";
+            // 
+            // DeleteChannelChannel
+            // 
+            this.DeleteChannelChannel.Font = new System.Drawing.Font("Consolas", 8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.DeleteChannelChannel.Location = new System.Drawing.Point(122, 57);
+            this.DeleteChannelChannel.Name = "DeleteChannelChannel";
+            this.DeleteChannelChannel.Size = new System.Drawing.Size(278, 26);
+            this.DeleteChannelChannel.TabIndex = 9;
+            this.DeleteChannelChannel.Text = "bar";
+            // 
+            // label6
+            // 
+            this.label6.AutoSize = true;
+            this.label6.Location = new System.Drawing.Point(6, 63);
+            this.label6.Name = "label6";
+            this.label6.Size = new System.Drawing.Size(68, 20);
+            this.label6.TabIndex = 10;
+            this.label6.Text = "Channel";
+            // 
+            // DeleteChannelTopic
+            // 
+            this.DeleteChannelTopic.Font = new System.Drawing.Font("Consolas", 8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.DeleteChannelTopic.Location = new System.Drawing.Point(122, 25);
+            this.DeleteChannelTopic.Name = "DeleteChannelTopic";
+            this.DeleteChannelTopic.Size = new System.Drawing.Size(278, 26);
+            this.DeleteChannelTopic.TabIndex = 8;
+            this.DeleteChannelTopic.Text = "foo";
+            // 
+            // label4
+            // 
+            this.label4.AutoSize = true;
+            this.label4.Location = new System.Drawing.Point(6, 31);
+            this.label4.Name = "label4";
+            this.label4.Size = new System.Drawing.Size(47, 20);
+            this.label4.TabIndex = 8;
+            this.label4.Text = "Topic";
+            // 
+            // DeleteChannelButton
+            // 
+            this.DeleteChannelButton.Location = new System.Drawing.Point(406, 25);
+            this.DeleteChannelButton.Name = "DeleteChannelButton";
+            this.DeleteChannelButton.Size = new System.Drawing.Size(160, 46);
+            this.DeleteChannelButton.TabIndex = 5;
+            this.DeleteChannelButton.Text = "Go";
+            this.DeleteChannelButton.UseVisualStyleBackColor = true;
+            this.DeleteChannelButton.Click += new System.EventHandler(this.DeleteChannelButton_Click);
+            // 
+            // groupBox5
+            // 
+            this.groupBox5.Controls.Add(this.DeleteTopicTopic);
+            this.groupBox5.Controls.Add(this.label8);
+            this.groupBox5.Controls.Add(this.DeleteTopicButton);
+            this.groupBox5.Location = new System.Drawing.Point(16, 376);
+            this.groupBox5.Name = "groupBox5";
+            this.groupBox5.Size = new System.Drawing.Size(572, 94);
+            this.groupBox5.TabIndex = 12;
+            this.groupBox5.TabStop = false;
+            this.groupBox5.Text = "/delete_topic";
+            // 
+            // DeleteTopicTopic
+            // 
+            this.DeleteTopicTopic.Font = new System.Drawing.Font("Consolas", 8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.DeleteTopicTopic.Location = new System.Drawing.Point(122, 25);
+            this.DeleteTopicTopic.Name = "DeleteTopicTopic";
+            this.DeleteTopicTopic.Size = new System.Drawing.Size(278, 26);
+            this.DeleteTopicTopic.TabIndex = 8;
+            this.DeleteTopicTopic.Text = "foo";
+            // 
+            // label8
+            // 
+            this.label8.AutoSize = true;
+            this.label8.Location = new System.Drawing.Point(6, 31);
+            this.label8.Name = "label8";
+            this.label8.Size = new System.Drawing.Size(47, 20);
+            this.label8.TabIndex = 8;
+            this.label8.Text = "Topic";
+            // 
+            // DeleteTopicButton
+            // 
+            this.DeleteTopicButton.Location = new System.Drawing.Point(406, 25);
+            this.DeleteTopicButton.Name = "DeleteTopicButton";
+            this.DeleteTopicButton.Size = new System.Drawing.Size(160, 46);
+            this.DeleteTopicButton.TabIndex = 5;
+            this.DeleteTopicButton.Text = "Go";
+            this.DeleteTopicButton.UseVisualStyleBackColor = true;
+            this.DeleteTopicButton.Click += new System.EventHandler(this.DeleteTopicButton_Click);
+            // 
             // LookupForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(9F, 20F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(686, 989);
+            this.Controls.Add(this.groupBox5);
+            this.Controls.Add(this.groupBox4);
             this.Controls.Add(this.groupBox3);
             this.Controls.Add(this.groupBox2);
             this.Controls.Add(this.groupBox1);
@@ -212,6 +326,10 @@
             this.groupBox2.ResumeLayout(false);
             this.groupBox3.ResumeLayout(false);
             this.groupBox3.PerformLayout();
+            this.groupBox4.ResumeLayout(false);
+            this.groupBox4.PerformLayout();
+            this.groupBox5.ResumeLayout(false);
+            this.groupBox5.PerformLayout();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -234,5 +352,15 @@
         private System.Windows.Forms.TextBox ChannelsTopic;
         private System.Windows.Forms.Label label5;
         private System.Windows.Forms.Button ChannelsButton;
+        private System.Windows.Forms.GroupBox groupBox4;
+        private System.Windows.Forms.TextBox DeleteChannelTopic;
+        private System.Windows.Forms.Label label4;
+        private System.Windows.Forms.Button DeleteChannelButton;
+        private System.Windows.Forms.TextBox DeleteChannelChannel;
+        private System.Windows.Forms.Label label6;
+        private System.Windows.Forms.GroupBox groupBox5;
+        private System.Windows.Forms.TextBox DeleteTopicTopic;
+        private System.Windows.Forms.Label label8;
+        private System.Windows.Forms.Button DeleteTopicButton;
     }
 }

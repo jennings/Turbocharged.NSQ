@@ -19,14 +19,14 @@ namespace TestClient
             InitializeComponent();
         }
 
-        LookupdConnection CreateConnection()
+        LookupServer CreateConnection()
         {
             var host = Host.Text;
             var port = int.Parse(Port.Text);
-            return new LookupdConnection(host, port);
+            return new LookupServer(host, port);
         }
 
-        async Task DoUIStuff(Func<LookupdConnection,Task> action)
+        async Task DoUIStuff(Func<LookupServer, Task> action)
         {
             try
             {
@@ -69,6 +69,27 @@ namespace TestClient
                 var topic = ChannelsTopic.Text;
                 var result = await connection.ChannelsAsync(topic);
                 ResultsTextBox.Text = string.Join("\r\n", result.Select(c => (string)c).DefaultIfEmpty("(empty)").ToArray());
+            });
+        }
+
+        async void DeleteTopicButton_Click(object sender, EventArgs e)
+        {
+            await DoUIStuff(async connection =>
+            {
+                var topic = DeleteTopicTopic.Text;
+                await connection.DeleteTopicAsync(topic);
+                ResultsTextBox.Text = "Done!";
+            });
+        }
+
+        async void DeleteChannelButton_Click(object sender, EventArgs e)
+        {
+            await DoUIStuff(async connection =>
+            {
+                var topic = DeleteChannelTopic.Text;
+                var channel = DeleteChannelChannel.Text;
+                await connection.DeleteChannelAsync(topic, channel);
+                ResultsTextBox.Text = "Done!";
             });
         }
     }
