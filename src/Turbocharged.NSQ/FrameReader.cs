@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Sockets;
@@ -7,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace Turbocharged.NSQ
 {
-    class IncomingMessageProcessor
+    class FrameReader
     {
         const int FRAME_SIZE_LENGTH = 4;
         const int FRAME_TYPE_LENGTH = 4;
@@ -18,12 +19,12 @@ namespace Turbocharged.NSQ
         const int MESSAGE_ID_LENGTH = 4;
         readonly NetworkStream _stream;
 
-        public IncomingMessageProcessor(NetworkStream stream)
+        public FrameReader(NetworkStream stream)
         {
             _stream = stream;
         }
 
-        public async Task<Message> ReadMessageAsync()
+        public Frame ReadFrame()
         {
             // MESSAGE FRAME FORMAT:
             //   4 bytes - Int32, size of the frame, excluding this field
@@ -35,36 +36,50 @@ namespace Turbocharged.NSQ
             //      N bytes - message body
 
             // Get the size of the incoming frame
-            byte[] frameSizeBytes = await ReadBytesAsync(FRAME_SIZE_LENGTH).ConfigureAwait(false);
+            byte[] frameSizeBytes = ReadBytes(FRAME_SIZE_LENGTH);
             if (BitConverter.IsLittleEndian)
                 Array.Reverse(frameSizeBytes);
             var frameLength = BitConverter.ToInt32(frameSizeBytes, 0);
 
             // Read the rest of the frame
-            var frame = await ReadBytesAsync(frameLength).ConfigureAwait(false);
+            var frame = ReadBytes(frameLength);
 
             // Get the frame type
             byte[] frameTypeBytes = new byte[FRAME_TYPE_LENGTH];
             Array.ConstrainedCopy(frame, 0, frameTypeBytes, 0, FRAME_TYPE_LENGTH);
             if (BitConverter.IsLittleEndian)
                 Array.Reverse(frameTypeBytes);
-            var frameType = (MessageType)BitConverter.ToInt32(frameTypeBytes, 0);
+            var frameType = (FrameType)BitConverter.ToInt32(frameTypeBytes, 0);
 
             // Get the data portion of the frame
             var dataLength = frameLength - FRAME_TYPE_LENGTH;
             byte[] dataBuffer = new byte[dataLength];
             Array.ConstrainedCopy(frame, FRAME_TYPE_LENGTH, dataBuffer, 0, dataLength);
 
-            var readableData = Encoding.ASCII.GetString(dataBuffer, 0, dataBuffer.Length);
-
-            return new Message
+            return new Frame
             {
                 MessageSize = frameLength,
                 Type = frameType,
-
-                Bytes = dataBuffer,
-                Readable = readableData,
+                Data = dataBuffer,
             };
+        }
+
+        byte[] ReadBytes(int count)
+        {
+            byte[] buffer = new byte[count];
+            int offset = 0;
+            int bytesRead = 0;
+            int bytesLeft = count;
+
+            while ((bytesRead = _stream.Read(buffer, offset, bytesLeft)) > 0)
+            {
+                offset += bytesRead;
+                bytesLeft -= bytesRead;
+                if (offset > count) throw new InvalidOperationException("Read too many bytes");
+                if (offset == count) break;
+            }
+
+            return buffer;
         }
 
         async Task<byte[]> ReadBytesAsync(int count)

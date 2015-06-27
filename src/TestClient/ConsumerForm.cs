@@ -13,19 +13,61 @@ namespace TestClient
 {
     public partial class ConsumerForm : Form
     {
+        BindingList<string> _messages = new BindingList<string>();
+        NsqConnection _nsq;
+
         public ConsumerForm(string host, int port)
         {
             InitializeComponent();
             Host.Text = host;
             Port.Text = port.ToString();
+            ReceivedMessages.DataSource = _messages;
+
+            _nsq = new NsqConnection(string.Format("nsqd={0}:{1}", host, port));
+            _nsq.MessageReceived += c_MessageReceived;
+            _nsq.InternalMessages += _nsq_InternalMessages;
+        }
+
+        void _nsq_InternalMessages(string obj)
+        {
+            PostMessage("INTERNAL: " + obj);
         }
 
         async void ConnectButton_Click(object sender, EventArgs e)
         {
             var host = Host.Text;
             var port = int.Parse(Port.Text);
-            var c = await NsqConnection.ConnectAsync(string.Format("nsqd={0}:{1}", host, port));
-            await c.IdentifyAsync();
+            await _nsq.ConnectAsync();
+        }
+
+        void c_MessageReceived(Turbocharged.NSQ.Message obj)
+        {
+            PostMessage("RECEIVED MESSAGE. Id = " + obj.Id + ", Attempts = " + obj.Attempts);
+        }
+
+        void ConsumerForm_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            _nsq.Close();
+        }
+
+        void PostMessage(string obj)
+        {
+            Invoke((Action)(() => _messages.Add(obj)));
+        }
+
+        void DisconnectButton_Click(object sender, EventArgs e)
+        {
+            _nsq.Close();
+        }
+
+        async void SubscribeButton_Click(object sender, EventArgs e)
+        {
+            await _nsq.SubscribeAsync(TopicTextBox.Text, ChannelTextBox.Text);
+        }
+
+        async void ReadyButton_Click(object sender, EventArgs e)
+        {
+            await _nsq.ReadyAsync(4);
         }
     }
 }

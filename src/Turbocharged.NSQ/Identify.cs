@@ -15,32 +15,15 @@ namespace Turbocharged.NSQ
         Deflate,
     }
 
-    class Identify : ICommand
+    class IdentifyResponse
     {
-        public byte[] ToByteArray()
-        {
-            byte[] body;
-            using (var stream = new MemoryStream(1024))
-            using (var writer = new System.IO.StreamWriter(stream))
-            using (var jsonWriter = new JsonTextWriter(writer))
-            {
-                var serializer = new JsonSerializer();
-                serializer.Serialize(jsonWriter, this);
-                jsonWriter.Flush();
-                writer.Flush();
-                body = stream.ToArray();
-            }
+    }
 
-            byte[] length = BitConverter.GetBytes(body.Length);
-            if (BitConverter.IsLittleEndian)
-                Array.Reverse(length);
-
-            return new[] { 'I', 'D', 'E', 'N', 'T', 'I', 'F', 'Y', '\n' }
-                .Select(ch => (byte)ch)
-                .Concat(length)
-                .Concat(body)
-                .ToArray();
-        } 
+    class Identify : ICommand<IdentifyResponse>
+    {
+        JsonSerializer _serializer = new JsonSerializer();
+        TaskCompletionSource<IdentifyResponse> _tcs = new TaskCompletionSource<IdentifyResponse>();
+        public Task<IdentifyResponse> Task { get { return _tcs.Task; } }
 
         public Identify()
         {
@@ -55,6 +38,42 @@ namespace Turbocharged.NSQ
             TLS_V1 = false;
             Compression = NSQ.Compression.None;
         }
+
+        public byte[] ToByteArray()
+        {
+            byte[] body;
+            using (var stream = new MemoryStream(1024))
+            using (var writer = new System.IO.StreamWriter(stream))
+            using (var jsonWriter = new JsonTextWriter(writer))
+            {
+                _serializer.Serialize(jsonWriter, this);
+                jsonWriter.Flush();
+                writer.Flush();
+                body = stream.ToArray();
+            }
+
+            byte[] length = BitConverter.GetBytes(body.Length);
+            if (BitConverter.IsLittleEndian)
+                Array.Reverse(length);
+
+            return new[] { 'I', 'D', 'E', 'N', 'T', 'I', 'F', 'Y', '\n' }
+                .Select(ch => (byte)ch)
+                .Concat(length)
+                .Concat(body)
+                .ToArray();
+        }
+
+        public void Complete(byte[] data)
+        {
+            using (var stream = new MemoryStream(data))
+            using (var reader = new StreamReader(stream, Encoding.UTF8))
+            using (var jsonReader = new JsonTextReader(reader))
+            {
+                var response = _serializer.Deserialize<IdentifyResponse>(jsonReader);
+                _tcs.SetResult(response);
+            }
+        }
+
 
         /// <summary>
         /// (Deprecated in favor of client_id as of nsqd v0.2.28+) An identifier used as a short-form descriptor (i.e. short hostname).
