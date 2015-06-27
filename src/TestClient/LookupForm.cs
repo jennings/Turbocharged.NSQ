@@ -14,9 +14,11 @@ namespace TestClient
 {
     public partial class LookupForm : Form
     {
-        public LookupForm()
+        public LookupForm(string hostname, int port)
         {
             InitializeComponent();
+            Host.Text = hostname;
+            Port.Text = port.ToString();
         }
 
         LookupServer CreateConnection()

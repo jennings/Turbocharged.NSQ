@@ -43,7 +43,11 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Message.cs" />
+    <Compile Include="ICommand.cs" />
     <Compile Include="ConnectionOptions.cs" />
+    <Compile Include="Identify.cs" />
+    <Compile Include="IncomingMessageProcessor.cs" />
     <Compile Include="LookupServer.cs" />
     <Compile Include="Addresses.cs" />
     <Compile Include="TopicAndChannel.cs" />
