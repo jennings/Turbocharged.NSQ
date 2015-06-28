@@ -13,11 +13,14 @@ namespace Turbocharged.NSQ
     {
         static readonly byte[] MAGIC_V2 = new byte[] { 32, 32, 86, 50 }; // "  V2"
 
+        public event Action<string> InternalMessages = _ => { };
+        public event Action<Message> MessageReceived;
+        public ConnectionOptions ConnectionOptions { get; private set; }
+
         TcpClient _tcpClient;
         NetworkStream _stream;
         Thread _workerThread;
-        BlockingCollection<ICommandWithResponse> _commandQueue;
-        readonly SemaphoreSlim _commandQueueLock = new SemaphoreSlim(1, 1);
+        IdentifyResponse _identifyResponse;
 
         public NsqConnection(string connectionString)
             : this(ConnectionOptions.Parse(connectionString))
@@ -29,11 +32,7 @@ namespace Turbocharged.NSQ
             ConnectionOptions = options;
         }
 
-        public event Action<string> InternalMessages = _ => { };
-        public event Action<Message> MessageReceived;
-        public ConnectionOptions ConnectionOptions { get; private set; }
-
-        public async Task ConnectAsync()
+        public async Task ConnectAsync(Topic topic, Channel channel)
         {
             var ep = ConnectionOptions.NsqdEndPoints.First();
             var host = ep.Host;
@@ -44,18 +43,38 @@ namespace Turbocharged.NSQ
             InternalMessages("TCP client started");
             _stream = _tcpClient.GetStream();
 
-            // Use the V2 protocol
+            // Initiate the V2 protocol
             await _stream.WriteAsync(MAGIC_V2, 0, MAGIC_V2.Length).ConfigureAwait(false);
+            _identifyResponse = await IdentifyAsync().ConfigureAwait(false);
+            if (_identifyResponse.AuthRequired)
+            {
+                Close();
+                throw new NotSupportedException("Authorization is not supported");
+            }
 
             // Begin the worker thread which receives and dispatches messages
-            _commandQueue = new BlockingCollection<ICommandWithResponse>(new ConcurrentQueue<ICommandWithResponse>());
             _workerThread = new Thread(MessageReceiverLoop);
             InternalMessages("Worker thread starting");
             _workerThread.Start();
             InternalMessages("Worker thread started");
+        }
 
-            // IDENTIFY
-            await SendCommandAsync(new Identify()).ConfigureAwait(false);
+        public void Close()
+        {
+            _tcpClient.Close();
+        }
+
+        async Task<IdentifyResponse> IdentifyAsync()
+        {
+            var identify = new Identify(ConnectionOptions);
+            await SendCommandAsync(identify).ConfigureAwait(false);
+            var frameReader = new FrameReader(_stream);
+            var frame = frameReader.ReadFrame();
+            if (frame.Type != FrameType.Result)
+            {
+                throw new InvalidOperationException("Unexpected frame type after IDENTIFY");
+            }
+            return identify.ParseIdentifyResponse(frame.Data);
         }
 
         static readonly byte[] HEARTBEAT = new byte[] { 95, 104, 101, 97, 114, 116, 98, 101, 97, 116, 95 }; // "_heartbeat_"
@@ -79,14 +98,7 @@ namespace Turbocharged.NSQ
                         }
                         else
                         {
-                            ICommandWithResponse command;
-                            if (!_commandQueue.TryTake(out command))
-                            {
-                                throw new InvalidOperationException("Received a response but wasn't waiting for a command");
-                            }
-
                             InternalMessages("Received result. Length = " + frame.MessageSize);
-                            command.Complete(frame.Data);
                         }
                     }
                     else if (frame.Type == FrameType.Message)
@@ -96,6 +108,7 @@ namespace Turbocharged.NSQ
                         if (listeners != null)
                         {
                             var message = new Message(frame);
+                            // TODO: Rethink this
                             ThreadPool.QueueUserWorkItem(new WaitCallback(_ => listeners(message)));
                         }
                     }
@@ -116,44 +129,16 @@ namespace Turbocharged.NSQ
             }
         }
 
-        public Task SubscribeAsync(Topic topic, Channel channel)
-        {
-            return SendCommandAsync(new Subscribe(topic, channel));
-        }
         public Task ReadyAsync(int count)
         {
             return SendCommandAsync(new Ready(count));
         }
 
-        public void Close()
-        {
-            _tcpClient.Close();
-        }
-
-        async Task SendCommandAsync(ICommand command)
+        Task SendCommandAsync(ICommand command)
         {
             var msg = command.ToByteArray();
             var readableMsg = Encoding.UTF8.GetString(msg);
-
-            var willUseCommandQueue = command is ICommandWithResponse;
-            if (willUseCommandQueue)
-            {
-                await _commandQueueLock.WaitAsync().ConfigureAwait(false);
-            }
-
-            try
-            {
-                await _stream.WriteAsync(msg, 0, msg.Length).ConfigureAwait(false);
-                if (willUseCommandQueue)
-                {
-                    _commandQueue.Add(command as ICommandWithResponse);
-                }
-            }
-            finally
-            {
-                if (willUseCommandQueue)
-                    _commandQueueLock.Release();
-            }
+            return _stream.WriteAsync(msg, 0, msg.Length);
         }
     }
 

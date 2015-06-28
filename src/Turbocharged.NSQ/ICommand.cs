@@ -10,14 +10,4 @@ namespace Turbocharged.NSQ
     {
         byte[] ToByteArray();
     }
-
-    interface ICommandWithResponse : ICommand
-    {
-        void Complete(byte[] data);
-    }
-
-    interface ICommand<T> : ICommandWithResponse
-    {
-        Task<T> Task { get; }
-    }
 }

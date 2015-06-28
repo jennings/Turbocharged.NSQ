@@ -39,7 +39,6 @@
             this.TopicTextBox = new System.Windows.Forms.TextBox();
             this.label4 = new System.Windows.Forms.Label();
             this.ChannelTextBox = new System.Windows.Forms.TextBox();
-            this.SubscribeButton = new System.Windows.Forms.Button();
             this.ReadyButton = new System.Windows.Forms.Button();
             this.SuspendLayout();
             // 
@@ -144,16 +143,6 @@
             this.ChannelTextBox.TabIndex = 14;
             this.ChannelTextBox.Text = "bar";
             // 
-            // SubscribeButton
-            // 
-            this.SubscribeButton.Location = new System.Drawing.Point(354, 76);
-            this.SubscribeButton.Name = "SubscribeButton";
-            this.SubscribeButton.Size = new System.Drawing.Size(140, 58);
-            this.SubscribeButton.TabIndex = 16;
-            this.SubscribeButton.Text = "Subscribe";
-            this.SubscribeButton.UseVisualStyleBackColor = true;
-            this.SubscribeButton.Click += new System.EventHandler(this.SubscribeButton_Click);
-            // 
             // ReadyButton
             // 
             this.ReadyButton.Location = new System.Drawing.Point(500, 76);
@@ -170,7 +159,6 @@
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(660, 653);
             this.Controls.Add(this.ReadyButton);
-            this.Controls.Add(this.SubscribeButton);
             this.Controls.Add(this.label4);
             this.Controls.Add(this.ChannelTextBox);
             this.Controls.Add(this.label3);
@@ -203,7 +191,6 @@
         private System.Windows.Forms.TextBox TopicTextBox;
         private System.Windows.Forms.Label label4;
         private System.Windows.Forms.TextBox ChannelTextBox;
-        private System.Windows.Forms.Button SubscribeButton;
         private System.Windows.Forms.Button ReadyButton;
     }
 }

@@ -6,11 +6,8 @@ using System.Threading.Tasks;
 
 namespace Turbocharged.NSQ
 {
-    class Subscribe : ICommand<Unit>
+    class Subscribe : ICommand
     {
-        TaskCompletionSource<Unit> _tcs = new TaskCompletionSource<Unit>();
-        public Task<Unit> Task { get { return _tcs.Task; } }
-
         readonly Topic _topic;
         readonly Channel _channel;
 
@@ -18,27 +15,6 @@ namespace Turbocharged.NSQ
         {
             _topic = topic;
             _channel = channel;
-        }
-
-        public void Complete(byte[] data)
-        {
-            var str = Encoding.UTF8.GetString(data);
-            switch (str)
-            {
-                case "OK":
-                    _tcs.SetResult(Unit.Default);
-                    return;
-
-                case "E_INVALID":
-                case "E_BAD_TOPIC":
-                case "E_BAD_CHANNEL":
-                    _tcs.SetException(new InvalidOperationException(str));
-                    return;
-
-                default:
-                    _tcs.SetException(new InvalidOperationException("Unexpected response: " + str));
-                    return;
-            }
         }
 
         public byte[] ToByteArray()

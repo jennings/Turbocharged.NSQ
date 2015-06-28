@@ -25,10 +25,15 @@ namespace Turbocharged.NSQ
         public ConnectionDiscoveryMode DiscoveryMode { get; set; }
         public HashSet<DnsEndPoint> LookupdEndPoints { get; private set; }
         public HashSet<DnsEndPoint> NsqdEndPoints { get; private set; }
-        public bool TLS { get; set; }
+        public string ClientId { get; set; }
+        public string HostName { get; set; }
+        public int MaxInFlight { get; set; }
 
         public ConnectionOptions()
         {
+            ClientId = "Turbocharged.NSQ";
+            HostName = Environment.MachineName;
+            MaxInFlight = 2500;
             LookupdEndPoints = new HashSet<DnsEndPoint>();
             NsqdEndPoints = new HashSet<DnsEndPoint>();
         }
@@ -67,6 +72,15 @@ namespace Turbocharged.NSQ
                     options.NsqdEndPoints.Add(endpoint);
                 }
             }
+
+            if (parts.ContainsKey("clientid"))
+                options.ClientId = parts["clientid"];
+
+            if (parts.ContainsKey("hostname"))
+                options.ClientId = parts["hostname"];
+
+            if (parts.ContainsKey("maxinflight"))
+                options.MaxInFlight = int.Parse(parts["maxinflight"]);
 
             return options;
         }

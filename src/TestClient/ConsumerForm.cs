@@ -35,9 +35,9 @@ namespace TestClient
 
         async void ConnectButton_Click(object sender, EventArgs e)
         {
-            var host = Host.Text;
-            var port = int.Parse(Port.Text);
-            await _nsq.ConnectAsync();
+            var topic = TopicTextBox.Text;
+            var channel = ChannelTextBox.Text;
+            await _nsq.ConnectAsync(topic, channel);
         }
 
         void c_MessageReceived(Turbocharged.NSQ.Message obj)
@@ -58,11 +58,6 @@ namespace TestClient
         void DisconnectButton_Click(object sender, EventArgs e)
         {
             _nsq.Close();
-        }
-
-        async void SubscribeButton_Click(object sender, EventArgs e)
-        {
-            await _nsq.SubscribeAsync(TopicTextBox.Text, ChannelTextBox.Text);
         }
 
         async void ReadyButton_Click(object sender, EventArgs e)

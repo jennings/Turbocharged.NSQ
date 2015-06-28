@@ -45,5 +45,22 @@ namespace Turbocharged.NSQ
             Data = new byte[dataLength];
             Array.ConstrainedCopy(frame.Data, DATA_OFFSET, Data, 0, dataLength);
         }
+
+        public void Finish()
+        {
+        }
+
+        public void ReQueue()
+        {
+            ReQueue(TimeSpan.Zero);
+        }
+
+        public void ReQueue(TimeSpan delay)
+        {
+        }
+
+        public void Touch()
+        {
+        }
     }
 }
