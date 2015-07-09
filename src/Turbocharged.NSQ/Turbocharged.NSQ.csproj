@@ -44,16 +44,16 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Frame.cs" />
-    <Compile Include="ICommand.cs" />
+    <Compile Include="Commands\ICommand.cs" />
     <Compile Include="ConnectionOptions.cs" />
-    <Compile Include="Identify.cs" />
+    <Compile Include="Commands\Identify.cs" />
     <Compile Include="Message.cs" />
     <Compile Include="FrameReader.cs" />
     <Compile Include="LookupServer.cs" />
     <Compile Include="Addresses.cs" />
-    <Compile Include="Nop.cs" />
-    <Compile Include="Ready.cs" />
-    <Compile Include="Subscribe.cs" />
+    <Compile Include="Commands\Nop.cs" />
+    <Compile Include="Commands\Ready.cs" />
+    <Compile Include="Commands\Subscribe.cs" />
     <Compile Include="TopicAndChannel.cs" />
     <Compile Include="NsqConnection.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
