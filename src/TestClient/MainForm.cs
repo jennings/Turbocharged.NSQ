@@ -20,12 +20,12 @@ namespace TestClient
 
         public MainForm()
         {
-            lookupHostName = Environment.GetEnvironmentVariable("NSQ_LOOKUP_HOSTNAME") ?? "localhost";
-            var lookupPortString = Environment.GetEnvironmentVariable("NSQ_LOOKUP_PORT") ?? "4161";
+            lookupHostName = Environment.GetEnvironmentVariable("NSQLOOKUPD_HOSTNAME") ?? "localhost";
+            var lookupPortString = Environment.GetEnvironmentVariable("NSQLOOKUPD_PORT") ?? "4161";
             lookupPort = int.Parse(lookupPortString);
 
-            nsqHostName = Environment.GetEnvironmentVariable("NSQ_NSQ_HOSTNAME") ?? "localhost";
-            var nsqPortString = Environment.GetEnvironmentVariable("NSQ_NSQ_PORT") ?? "4150";
+            nsqHostName = Environment.GetEnvironmentVariable("NSQD_HOSTNAME") ?? "localhost";
+            var nsqPortString = Environment.GetEnvironmentVariable("NSQD_PORT") ?? "4150";
             nsqPort = int.Parse(nsqPortString);
 
             InitializeComponent();

@@ -6,35 +6,42 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using HandlerFunc = System.Func<Turbocharged.NSQ.Message, System.Threading.Tasks.Task>;
 
 namespace Turbocharged.NSQ
 {
-    public class NsqConnection
+    public sealed class NsqTcpConnection : IDisposable
     {
         static readonly byte[] MAGIC_V2 = new byte[] { 32, 32, 86, 50 }; // "  V2"
 
         public event Action<string> InternalMessages = _ => { };
-        public event Action<Message> MessageReceived;
-        public ConnectionOptions ConnectionOptions { get; private set; }
+        public ConsumerOptions ConsumerOptions { get; private set; }
 
         TcpClient _tcpClient;
         NetworkStream _stream;
         Thread _workerThread;
         IdentifyResponse _identifyResponse;
+        HandlerFunc _messageHandler;
 
-        public NsqConnection(string connectionString)
-            : this(ConnectionOptions.Parse(connectionString))
+        public NsqTcpConnection(string connectionString)
+            : this(ConsumerOptions.Parse(connectionString))
         {
         }
 
-        public NsqConnection(ConnectionOptions options)
+        public NsqTcpConnection(ConsumerOptions options)
         {
-            ConnectionOptions = options;
+            if (options.NsqdEndPoints.Count != 1) throw new ArgumentException("Must provide exactly one nsqd endpoint");
+            ConsumerOptions = options;
         }
 
-        public async Task ConnectAsync(Topic topic, Channel channel)
+        public void Dispose()
         {
-            var ep = ConnectionOptions.NsqdEndPoints.First();
+            ((IDisposable)_tcpClient).Dispose();
+        }
+
+        public async Task ConnectAsync(Topic topic, Channel channel, HandlerFunc handler)
+        {
+            var ep = ConsumerOptions.NsqdEndPoints.First();
             var host = ep.Host;
             var port = ep.Port;
             InternalMessages("TCP client starting");
@@ -52,6 +59,9 @@ namespace Turbocharged.NSQ
                 throw new NotSupportedException("Authorization is not supported");
             }
 
+            _messageHandler = handler;
+            await SendCommandAsync(new Subscribe(topic, channel)).ConfigureAwait(false);
+
             // Begin the worker thread which receives and dispatches messages
             _workerThread = new Thread(MessageReceiverLoop);
             InternalMessages("Worker thread starting");
@@ -66,7 +76,7 @@ namespace Turbocharged.NSQ
 
         async Task<IdentifyResponse> IdentifyAsync()
         {
-            var identify = new Identify(ConnectionOptions);
+            var identify = new Identify(ConsumerOptions);
             await SendCommandAsync(identify).ConfigureAwait(false);
             var frameReader = new FrameReader(_stream);
             var frame = frameReader.ReadFrame();
@@ -104,13 +114,9 @@ namespace Turbocharged.NSQ
                     else if (frame.Type == FrameType.Message)
                     {
                         InternalMessages("Received message. Length = " + frame.MessageSize);
-                        var listeners = MessageReceived;
-                        if (listeners != null)
-                        {
-                            var message = new Message(frame);
-                            // TODO: Rethink this
-                            ThreadPool.QueueUserWorkItem(new WaitCallback(_ => listeners(message)));
-                        }
+                        var message = new Message(frame, this);
+                        // TODO: Rethink this
+                        ThreadPool.QueueUserWorkItem(new WaitCallback(_ => { _messageHandler(message); }));
                     }
                     else if (frame.Type == FrameType.Error)
                     {
@@ -134,28 +140,11 @@ namespace Turbocharged.NSQ
             return SendCommandAsync(new Ready(count));
         }
 
-        Task SendCommandAsync(ICommand command)
+        internal Task SendCommandAsync(ICommand command)
         {
             var msg = command.ToByteArray();
             var readableMsg = Encoding.UTF8.GetString(msg);
             return _stream.WriteAsync(msg, 0, msg.Length);
         }
-    }
-
-    public interface IPublisher
-    {
-        Task PublishAsync(string topic, byte[] message);
-    }
-
-    public interface IMessageFinisher
-    {
-        void Finish();
-        void Requeue();
-        void Touch();
-    }
-
-    public interface IConsumer
-    {
-        Task SubscribeAsync(string topic, string channel, Action<string, IMessageFinisher> handler);
     }
 }

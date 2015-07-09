@@ -11,13 +11,17 @@ namespace Turbocharged.NSQ
     /// </summary>
     public class Message
     {
-        public string Id { get; set; }
-        public short Attempts { get; set; }
-        public long Timestamp { get; set; }
-        public byte[] Data { get; set; }
+        public string Id { get; private set; }
+        public short Attempts { get; private set; }
+        public long Timestamp { get; private set; }
+        public byte[] Data { get; private set; }
 
-        internal Message(Frame frame)
+        readonly NsqTcpConnection _connection;
+
+        internal Message(Frame frame, NsqTcpConnection connection)
         {
+            _connection = connection;
+
             if (frame.Type != FrameType.Message)
                 throw new ArgumentException("Frame must have FrameType 'Message'", "frame");
 
@@ -46,21 +50,19 @@ namespace Turbocharged.NSQ
             Array.ConstrainedCopy(frame.Data, DATA_OFFSET, Data, 0, dataLength);
         }
 
-        public void Finish()
+        public Task FinishAsync()
         {
+            return _connection.SendCommandAsync(new Finish(this));
         }
 
-        public void ReQueue()
+        public Task RequeueAsync()
         {
-            ReQueue(TimeSpan.Zero);
+            throw new NotImplementedException();
         }
 
-        public void ReQueue(TimeSpan delay)
+        public Task TouchAsync()
         {
-        }
-
-        public void Touch()
-        {
+            throw new NotImplementedException();
         }
     }
 }

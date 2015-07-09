@@ -14,7 +14,7 @@ namespace TestClient
     public partial class ConsumerForm : Form
     {
         BindingList<string> _messages = new BindingList<string>();
-        NsqConnection _nsq;
+        NsqTcpConnection _nsq;
 
         public ConsumerForm(string host, int port)
         {
@@ -23,8 +23,7 @@ namespace TestClient
             Port.Text = port.ToString();
             ReceivedMessages.DataSource = _messages;
 
-            _nsq = new NsqConnection(string.Format("nsqd={0}:{1}", host, port));
-            _nsq.MessageReceived += c_MessageReceived;
+            _nsq = new NsqTcpConnection(string.Format("nsqd={0}:{1}", host, port));
             _nsq.InternalMessages += _nsq_InternalMessages;
         }
 
@@ -37,12 +36,17 @@ namespace TestClient
         {
             var topic = TopicTextBox.Text;
             var channel = ChannelTextBox.Text;
-            await _nsq.ConnectAsync(topic, channel);
+            await _nsq.ConnectAsync(topic, channel, async msg =>
+            {
+                await c_MessageReceived(msg);
+                await msg.FinishAsync();
+            });
         }
 
-        void c_MessageReceived(Turbocharged.NSQ.Message obj)
+        Task c_MessageReceived(Turbocharged.NSQ.Message obj)
         {
             PostMessage("RECEIVED MESSAGE. Id = " + obj.Id + ", Attempts = " + obj.Attempts);
+            return Task.FromResult(0);
         }
 
         void ConsumerForm_FormClosing(object sender, FormClosingEventArgs e)

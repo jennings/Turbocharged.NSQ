@@ -13,7 +13,7 @@ namespace Turbocharged.NSQ
         Nsqd,
     }
 
-    public class ConnectionOptions
+    public class ConsumerOptions
     {
         /// <summary>
         /// Parses a connection string of the form:
@@ -29,7 +29,7 @@ namespace Turbocharged.NSQ
         public string HostName { get; set; }
         public int MaxInFlight { get; set; }
 
-        public ConnectionOptions()
+        public ConsumerOptions()
         {
             ClientId = "Turbocharged.NSQ";
             HostName = Environment.MachineName;
@@ -38,10 +38,10 @@ namespace Turbocharged.NSQ
             NsqdEndPoints = new HashSet<DnsEndPoint>();
         }
 
-        public static ConnectionOptions Parse(string connectionString)
+        public static ConsumerOptions Parse(string connectionString)
         {
             var parts =
-                connectionString.Split(new[] { "," }, StringSplitOptions.RemoveEmptyEntries)
+                connectionString.Split(new[] { ";" }, StringSplitOptions.RemoveEmptyEntries)
                 .Select(part => part.Split(new[] { "=" }, StringSplitOptions.RemoveEmptyEntries))
                 .Where(part => part.Length == 2)
                 .ToDictionary(
@@ -54,7 +54,7 @@ namespace Turbocharged.NSQ
             if (parts.ContainsKey("lookupd") && parts.ContainsKey("nsqd"))
                 throw new ArgumentException("Cannot provide both Lookupd and Nsqd endpoints in a connection string");
 
-            var options = new ConnectionOptions();
+            var options = new ConsumerOptions();
 
             if (parts.ContainsKey("lookupd"))
             {
@@ -88,7 +88,7 @@ namespace Turbocharged.NSQ
         static IEnumerable<DnsEndPoint> ParseEndPoints(string list, int defaultPort)
         {
             return
-                list.Split(new[] { ";" }, StringSplitOptions.RemoveEmptyEntries)
+                list.Split(new[] { "," }, StringSplitOptions.RemoveEmptyEntries)
                 .Select(endpoint => endpoint.Trim())
                 .Select(endpoint => endpoint.Split(new[] { ':' }, 2))
                 .Select(endpointParts => new DnsEndPoint(endpointParts[0], endpointParts.Length == 2 ? int.Parse(endpointParts[1]) : defaultPort));

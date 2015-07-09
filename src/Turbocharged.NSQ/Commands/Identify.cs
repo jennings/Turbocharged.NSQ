@@ -13,7 +13,7 @@ namespace Turbocharged.NSQ
         JsonSerializer _serializer = new JsonSerializer();
         IdentifyRequest _identifyRequest;
 
-        public Identify(ConnectionOptions options)
+        public Identify(ConsumerOptions options)
         {
             _identifyRequest = new IdentifyRequest
             {
