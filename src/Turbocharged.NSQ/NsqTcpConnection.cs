@@ -23,6 +23,7 @@ namespace Turbocharged.NSQ
         Thread _workerThread;
         IdentifyResponse _identifyResponse;
         HandlerFunc _messageHandler;
+        bool _disposed = false;
 
         public NsqTcpConnection(string connectionString)
             : this(ConsumerOptions.Parse(connectionString))
@@ -35,18 +36,13 @@ namespace Turbocharged.NSQ
             ConsumerOptions = options;
         }
 
-        public void Dispose()
-        {
-            if (_tcpClient != null)
-                ((IDisposable)_tcpClient).Dispose();
-        }
-
         public async Task ConnectAsync(Topic topic, Channel channel, HandlerFunc handler)
         {
             var ep = ConsumerOptions.NsqdEndPoints.First();
             var host = ep.Host;
             var port = ep.Port;
             InternalMessages("TCP client starting");
+            _disposed = false;
             _tcpClient = new TcpClient();
             await _tcpClient.ConnectAsync(host, port).ConfigureAwait(false);
             InternalMessages("TCP client started");
@@ -74,7 +70,14 @@ namespace Turbocharged.NSQ
 
         public void Close()
         {
-            _tcpClient.Close();
+            Dispose();
+        }
+
+        public void Dispose()
+        {
+            _disposed = true;
+            if (_tcpClient != null)
+                ((IDisposable)_tcpClient).Dispose();
         }
 
         async Task<IdentifyResponse> IdentifyAsync()
@@ -132,7 +135,11 @@ namespace Turbocharged.NSQ
             }
             catch (Exception ex)
             {
-                InternalMessages("Worker thread threw exception: " + ex.Message);
+                // Don't bother anyone if we've been disposed
+                if (!_disposed)
+                {
+                    InternalMessages("Worker thread threw exception: " + ex.Message);
+                }
             }
         }
 
