@@ -62,5 +62,15 @@ namespace Turbocharged.NSQ.Tests
 
             Assert.False(receivedData);
         }
+
+        [Fact]
+        public async Task CanGetProducerStats()
+        {
+            // Ensure something is there
+            await prod.PublishAsync(topic, new byte[] { 1 });
+            var stats = await prod.StatisticsAsync();
+            Assert.NotNull(stats.Version);
+            Assert.NotEmpty(stats.Topics);
+        }
     }
 }

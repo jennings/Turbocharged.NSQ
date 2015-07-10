@@ -83,6 +83,11 @@ namespace Turbocharged.NSQ
             return GetAsync("/ping", _ => true);
         }
 
+        public Task<NsqStatistics> StatisticsAsync()
+        {
+            return GetAsync("/stats?format=json", response => response["data"].ToObject<NsqStatistics>());
+        }
+
         public Task PublishAsync(Topic topic, byte[] data)
         {
             if (data == null || data.Length == 0)
