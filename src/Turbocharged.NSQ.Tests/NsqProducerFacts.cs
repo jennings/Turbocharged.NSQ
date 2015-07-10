@@ -9,7 +9,7 @@ using Xunit;
 
 namespace Turbocharged.NSQ.Tests
 {
-    public class ConnectionFacts : IDisposable
+    public class NsqProducerFacts : IDisposable
     {
         #region Setup
 
@@ -18,7 +18,7 @@ namespace Turbocharged.NSQ.Tests
         NsqTcpConnection conn;
         NsqProducer prod;
 
-        public ConnectionFacts()
+        public NsqProducerFacts()
         {
             var options = new ConsumerOptions
             {
@@ -43,27 +43,24 @@ namespace Turbocharged.NSQ.Tests
         #endregion
 
         [Fact]
-        public async Task CanReceiveAMessage()
+        public async Task ProducerCanEmptyAChannel()
         {
-            byte[] expectedData = new byte[] { 1, 2, 3 };
+            // Put something in the channel
+            await prod.PublishAsync(topic, new byte[] { 1 });
 
+            // Now erase it
             await EmptyChannelAsync(topic, channel);
 
-            var tcs = new TaskCompletionSource<Message>();
-            var task = tcs.Task;
+            // Now try to receive anything
+            bool receivedData = false;
             await conn.ConnectAsync(topic, channel, async msg =>
             {
-                if (tcs.TrySetResult(msg))
-                    await msg.FinishAsync();
+                receivedData = true;
+                await msg.FinishAsync();
             });
-            await prod.PublishAsync(topic, expectedData);
-            await Task.WhenAny(task, Task.Delay(1000));
+            await Task.Delay(100);
 
-            Assert.Equal(TaskStatus.RanToCompletion, task.Status);
-
-            byte[] receivedData = task.Result.Data;
-            Assert.NotNull(receivedData);
-            Assert.True(expectedData.SequenceEqual(receivedData));
+            Assert.False(receivedData);
         }
     }
 }

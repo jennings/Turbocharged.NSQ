@@ -20,6 +20,11 @@ namespace Turbocharged.NSQ
             return _topic;
         }
 
+        public byte[] ToUTF8()
+        {
+            return Encoding.UTF8.GetBytes(_topic);
+        }
+
         public static implicit operator string(Topic topic)
         {
             return topic._topic;
@@ -43,6 +48,11 @@ namespace Turbocharged.NSQ
         public override string ToString()
         {
             return _channel;
+        }
+
+        public byte[] ToUTF8()
+        {
+            return Encoding.UTF8.GetBytes(_channel);
         }
 
         public static implicit operator string(Channel channel)

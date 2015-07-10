@@ -63,10 +63,5 @@ namespace TestClient
         {
             _nsq.Close();
         }
-
-        async void ReadyButton_Click(object sender, EventArgs e)
-        {
-            await _nsq.ReadyAsync(4);
-        }
     }
 }

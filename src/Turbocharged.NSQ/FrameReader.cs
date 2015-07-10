@@ -81,23 +81,5 @@ namespace Turbocharged.NSQ
 
             return buffer;
         }
-
-        async Task<byte[]> ReadBytesAsync(int count)
-        {
-            byte[] buffer = new byte[count];
-            int offset = 0;
-            int bytesRead = 0;
-            int bytesLeft = count;
-
-            while ((bytesRead = await _stream.ReadAsync(buffer, offset, bytesLeft).ConfigureAwait(false)) > 0)
-            {
-                offset += bytesRead;
-                bytesLeft -= bytesRead;
-                if (offset > count) throw new InvalidOperationException("Read too many bytes");
-                if (offset == count) break;
-            }
-
-            return buffer;
-        }
     }
 }

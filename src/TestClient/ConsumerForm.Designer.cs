@@ -151,7 +151,6 @@
             this.ReadyButton.TabIndex = 17;
             this.ReadyButton.Text = "Ready";
             this.ReadyButton.UseVisualStyleBackColor = true;
-            this.ReadyButton.Click += new System.EventHandler(this.ReadyButton_Click);
             // 
             // ConsumerForm
             // 

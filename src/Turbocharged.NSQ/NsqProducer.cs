@@ -85,6 +85,9 @@ namespace Turbocharged.NSQ
 
         public Task PublishAsync(Topic topic, byte[] data)
         {
+            if (data == null || data.Length == 0)
+                throw new ArgumentOutOfRangeException("data", "Must provide data to publish");
+
             return PostAsync("/pub?topic=" + topic, data, _ => true);
         }
 
@@ -120,10 +123,6 @@ namespace Turbocharged.NSQ
                 }
 
                 return handler(response);
-            }
-            catch (WebException)
-            {
-                return default(T);
             }
             finally
             {

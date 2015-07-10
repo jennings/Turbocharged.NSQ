@@ -21,9 +21,9 @@ namespace Turbocharged.NSQ
         {
             return new[] { 'S', 'U', 'B', ' ' }
                 .Select(ch => (byte)ch)
-                .Concat(Encoding.UTF8.GetBytes(_topic))
+                .Concat(_topic.ToUTF8())
                 .Concat(new[] { (byte)' ' })
-                .Concat(Encoding.UTF8.GetBytes(_channel))
+                .Concat(_channel.ToUTF8())
                 .Concat(new[] { (byte)'\n' })
                 .ToArray();
         }

@@ -13,6 +13,7 @@ namespace Turbocharged.NSQ
     public sealed class NsqTcpConnection : IDisposable
     {
         static readonly byte[] MAGIC_V2 = new byte[] { 32, 32, 86, 50 }; // "  V2"
+        static readonly byte[] HEARTBEAT = new byte[] { 95, 104, 101, 97, 114, 116, 98, 101, 97, 116, 95 }; // "_heartbeat_"
 
         public event Action<string> InternalMessages = _ => { };
         public ConsumerOptions ConsumerOptions { get; private set; }
@@ -36,7 +37,8 @@ namespace Turbocharged.NSQ
 
         public void Dispose()
         {
-            ((IDisposable)_tcpClient).Dispose();
+            if (_tcpClient != null)
+                ((IDisposable)_tcpClient).Dispose();
         }
 
         public async Task ConnectAsync(Topic topic, Channel channel, HandlerFunc handler)
@@ -61,6 +63,7 @@ namespace Turbocharged.NSQ
 
             _messageHandler = handler;
             await SendCommandAsync(new Subscribe(topic, channel)).ConfigureAwait(false);
+            await SendCommandAsync(new Ready(ConsumerOptions.MaxInFlight)).ConfigureAwait(false);
 
             // Begin the worker thread which receives and dispatches messages
             _workerThread = new Thread(MessageReceiverLoop);
@@ -86,8 +89,6 @@ namespace Turbocharged.NSQ
             }
             return identify.ParseIdentifyResponse(frame.Data);
         }
-
-        static readonly byte[] HEARTBEAT = new byte[] { 95, 104, 101, 97, 114, 116, 98, 101, 97, 116, 95 }; // "_heartbeat_"
 
         void MessageReceiverLoop()
         {
@@ -135,15 +136,9 @@ namespace Turbocharged.NSQ
             }
         }
 
-        public Task ReadyAsync(int count)
-        {
-            return SendCommandAsync(new Ready(count));
-        }
-
         internal Task SendCommandAsync(ICommand command)
         {
             var msg = command.ToByteArray();
-            var readableMsg = Encoding.UTF8.GetString(msg);
             return _stream.WriteAsync(msg, 0, msg.Length);
         }
     }
