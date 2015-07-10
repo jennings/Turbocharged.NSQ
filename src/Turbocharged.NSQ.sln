@@ -5,13 +5,9 @@ VisualStudioVersion = 12.0.31101.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Turbocharged.NSQ", "Turbocharged.NSQ\Turbocharged.NSQ.csproj", "{ECC22C29-29D8-4043-A222-9854386F739B}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Samples", "Samples", "{95950B33-D804-458F-9C3E-B49AFECA93D3}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestClient", "TestClient\TestClient.csproj", "{850C6290-2EE1-4CC3-901F-EAC887B071D6}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Turbocharged.NSQ.Tests", "Turbocharged.NSQ.Tests\Turbocharged.NSQ.Tests.csproj", "{EF7A32D6-6557-4A4B-B4FD-77FC938F23EF}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{FB86B10F-6A5A-451F-B4B1-7E6213E88DFC}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{4FD3F09F-B91D-4898-80F6-97F582215EF4}"
 	ProjectSection(SolutionItems) = preProject
@@ -39,9 +35,5 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
-	EndGlobalSection
-	GlobalSection(NestedProjects) = preSolution
-		{850C6290-2EE1-4CC3-901F-EAC887B071D6} = {95950B33-D804-458F-9C3E-B49AFECA93D3}
-		{EF7A32D6-6557-4A4B-B4FD-77FC938F23EF} = {FB86B10F-6A5A-451F-B4B1-7E6213E88DFC}
 	EndGlobalSection
 EndGlobal
