@@ -2,6 +2,7 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
@@ -16,8 +17,9 @@ namespace Turbocharged.NSQ
         static readonly byte[] HEARTBEAT = new byte[] { 95, 104, 101, 97, 114, 116, 98, 101, 97, 116, 95 }; // "_heartbeat_"
 
         public event Action<string> InternalMessages = _ => { };
-        public ConsumerOptions ConsumerOptions { get; private set; }
 
+        ConsumerOptions _consumerOptions;
+        DnsEndPoint _endPoint;
         TcpClient _tcpClient;
         NetworkStream _stream;
         Thread _workerThread;
@@ -25,22 +27,16 @@ namespace Turbocharged.NSQ
         HandlerFunc _messageHandler;
         bool _disposed = false;
 
-        public NsqTcpConnection(string connectionString)
-            : this(ConsumerOptions.Parse(connectionString))
+        public NsqTcpConnection(DnsEndPoint endPoint, ConsumerOptions consumerOptions)
         {
-        }
-
-        public NsqTcpConnection(ConsumerOptions options)
-        {
-            if (options.NsqdEndPoints.Count != 1) throw new ArgumentException("Must provide exactly one nsqd endpoint");
-            ConsumerOptions = options;
+            _endPoint = endPoint;
+            _consumerOptions = consumerOptions;
         }
 
         public async Task ConnectAsync(Topic topic, Channel channel, HandlerFunc handler)
         {
-            var ep = ConsumerOptions.NsqdEndPoints.First();
-            var host = ep.Host;
-            var port = ep.Port;
+            var host = _endPoint.Host;
+            var port = _endPoint.Port;
             InternalMessages("TCP client starting");
             _disposed = false;
             _tcpClient = new TcpClient();
@@ -82,7 +78,7 @@ namespace Turbocharged.NSQ
 
         async Task<IdentifyResponse> IdentifyAsync()
         {
-            var identify = new Identify(ConsumerOptions);
+            var identify = new Identify(_consumerOptions);
             await SendCommandAsync(identify).ConfigureAwait(false);
             var frameReader = new FrameReader(_stream);
             var frame = frameReader.ReadFrame();

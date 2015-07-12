@@ -9,7 +9,7 @@ using Xunit;
 
 namespace Turbocharged.NSQ.Tests
 {
-    public class ConnectionFacts : IDisposable
+    public class TcpConnectionFacts : IDisposable
     {
         #region Setup
 
@@ -18,15 +18,10 @@ namespace Turbocharged.NSQ.Tests
         NsqTcpConnection conn;
         NsqProducer prod;
 
-        public ConnectionFacts()
+        public TcpConnectionFacts()
         {
-            var options = new ConsumerOptions
-            {
-                ClientId = "Turbocharged.NSQ.Tests",
-                NsqdEndPoints = { new DnsEndPoint(Settings.NsqdHostName, Settings.NsqdTcpPort) }
-            };
-
-            conn = new NsqTcpConnection(options);
+            var options = new ConsumerOptions();
+            conn = new NsqTcpConnection(new DnsEndPoint(Settings.NsqdHostName, Settings.NsqdTcpPort), options);
             prod = new NsqProducer(Settings.NsqdHostName, Settings.NsqdHttpPort);
         }
 

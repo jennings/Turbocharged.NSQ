@@ -20,13 +20,8 @@ namespace Turbocharged.NSQ.Tests
 
         public NsqProducerFacts()
         {
-            var options = new ConsumerOptions
-            {
-                ClientId = "Turbocharged.NSQ.Tests",
-                NsqdEndPoints = { new DnsEndPoint(Settings.NsqdHostName, Settings.NsqdTcpPort) }
-            };
-
-            conn = new NsqTcpConnection(options);
+            var options = new ConsumerOptions();
+            conn = new NsqTcpConnection(new DnsEndPoint(Settings.NsqdHostName, Settings.NsqdTcpPort), options);
             prod = new NsqProducer(Settings.NsqdHostName, Settings.NsqdHttpPort);
         }
 
