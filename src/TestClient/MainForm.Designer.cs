@@ -45,13 +45,13 @@
             // 
             // button2
             // 
-            this.button2.Enabled = false;
             this.button2.Location = new System.Drawing.Point(255, 12);
             this.button2.Name = "button2";
             this.button2.Size = new System.Drawing.Size(237, 69);
             this.button2.TabIndex = 1;
             this.button2.Text = "New Producer Window";
             this.button2.UseVisualStyleBackColor = true;
+            this.button2.Click += new System.EventHandler(this.button2_Click);
             // 
             // button3
             // 

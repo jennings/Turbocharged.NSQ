@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.Data;
 using System.Drawing;
 using System.Linq;
+using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -23,7 +24,8 @@ namespace TestClient
             Port.Text = port.ToString();
             ReceivedMessages.DataSource = _messages;
 
-            _nsq = new NsqTcpConnection(string.Format("nsqd={0}:{1}", host, port));
+            var options = ConsumerOptions.Parse(string.Format("nsqd={0}:{1}", host, port));
+            _nsq = new NsqTcpConnection(new DnsEndPoint(host, port), options);
             _nsq.InternalMessages += _nsq_InternalMessages;
         }
 
@@ -56,12 +58,22 @@ namespace TestClient
 
         void PostMessage(string obj)
         {
-            Invoke((Action)(() => _messages.Add(obj)));
+            Invoke((Action)(() =>
+            {
+                _messages.Add(obj);
+                ReceivedMessages.TopIndex = ReceivedMessages.Items.Count - 1;
+            }));
         }
 
         void DisconnectButton_Click(object sender, EventArgs e)
         {
             _nsq.Close();
+        }
+
+        async void ReadyButton_Click(object sender, EventArgs e)
+        {
+            var maxInFlight = int.Parse(ReadyTextBox.Text);
+            await _nsq.SetMaxInFlight(maxInFlight);
         }
     }
 }

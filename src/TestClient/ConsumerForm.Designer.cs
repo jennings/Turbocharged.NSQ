@@ -40,6 +40,8 @@
             this.label4 = new System.Windows.Forms.Label();
             this.ChannelTextBox = new System.Windows.Forms.TextBox();
             this.ReadyButton = new System.Windows.Forms.Button();
+            this.ReadyTextBox = new System.Windows.Forms.TextBox();
+            this.label5 = new System.Windows.Forms.Label();
             this.SuspendLayout();
             // 
             // Port
@@ -145,18 +147,39 @@
             // 
             // ReadyButton
             // 
-            this.ReadyButton.Location = new System.Drawing.Point(500, 76);
+            this.ReadyButton.Location = new System.Drawing.Point(354, 108);
             this.ReadyButton.Name = "ReadyButton";
             this.ReadyButton.Size = new System.Drawing.Size(134, 58);
             this.ReadyButton.TabIndex = 17;
             this.ReadyButton.Text = "Ready";
             this.ReadyButton.UseVisualStyleBackColor = true;
+            this.ReadyButton.Click += new System.EventHandler(this.ReadyButton_Click);
+            // 
+            // ReadyTextBox
+            // 
+            this.ReadyTextBox.Font = new System.Drawing.Font("Consolas", 8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.ReadyTextBox.Location = new System.Drawing.Point(95, 140);
+            this.ReadyTextBox.Name = "ReadyTextBox";
+            this.ReadyTextBox.Size = new System.Drawing.Size(253, 26);
+            this.ReadyTextBox.TabIndex = 18;
+            this.ReadyTextBox.Text = "3";
+            // 
+            // label5
+            // 
+            this.label5.AutoSize = true;
+            this.label5.Location = new System.Drawing.Point(21, 142);
+            this.label5.Name = "label5";
+            this.label5.Size = new System.Drawing.Size(55, 20);
+            this.label5.TabIndex = 19;
+            this.label5.Text = "Ready";
             // 
             // ConsumerForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(9F, 20F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(660, 653);
+            this.Controls.Add(this.label5);
+            this.Controls.Add(this.ReadyTextBox);
             this.Controls.Add(this.ReadyButton);
             this.Controls.Add(this.label4);
             this.Controls.Add(this.ChannelTextBox);
@@ -191,5 +214,7 @@
         private System.Windows.Forms.Label label4;
         private System.Windows.Forms.TextBox ChannelTextBox;
         private System.Windows.Forms.Button ReadyButton;
+        private System.Windows.Forms.TextBox ReadyTextBox;
+        private System.Windows.Forms.Label label5;
     }
 }

@@ -16,7 +16,7 @@ namespace TestClient
         int lookupPort;
 
         string nsqHostName;
-        int nsqPort;
+        int nsqTcpPort, nsqHttpPort;
 
         public MainForm()
         {
@@ -25,8 +25,10 @@ namespace TestClient
             lookupPort = int.Parse(lookupPortString);
 
             nsqHostName = Environment.GetEnvironmentVariable("NSQD_HOSTNAME") ?? "localhost";
-            var nsqPortString = Environment.GetEnvironmentVariable("NSQD_PORT") ?? "4150";
-            nsqPort = int.Parse(nsqPortString);
+            var nsqTcpPortString = Environment.GetEnvironmentVariable("NSQD_TCP_PORT") ?? "4150";
+            var nsqHttpPortString = Environment.GetEnvironmentVariable("NSQD_HTTP_PORT") ?? "4151";
+            nsqTcpPort = int.Parse(nsqTcpPortString);
+            nsqHttpPort = int.Parse(nsqHttpPortString);
 
             InitializeComponent();
         }
@@ -40,7 +42,14 @@ namespace TestClient
 
         void button3_Click(object sender, EventArgs e)
         {
-            var form = new ConsumerForm(nsqHostName, nsqPort);
+            var form = new ConsumerForm(nsqHostName, nsqTcpPort);
+            form.Show();
+            form.Activate();
+        }
+
+        void button2_Click(object sender, EventArgs e)
+        {
+            var form = new ProducerForm(nsqHostName, nsqHttpPort);
             form.Show();
             form.Activate();
         }
