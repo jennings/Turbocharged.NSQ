@@ -51,6 +51,7 @@ namespace Turbocharged.NSQ.Tests
                 if (tcs.TrySetResult(msg))
                     await msg.FinishAsync();
             });
+            await conn.SetMaxInFlight(100);
             await prod.PublishAsync(topic, expectedData);
             await Task.WhenAny(task, Task.Delay(1000));
 

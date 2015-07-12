@@ -53,6 +53,7 @@ namespace Turbocharged.NSQ.Tests
                 receivedData = true;
                 await msg.FinishAsync();
             });
+            await conn.SetMaxInFlight(100);
             await Task.Delay(100);
 
             Assert.False(receivedData);

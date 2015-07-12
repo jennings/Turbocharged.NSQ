@@ -55,7 +55,6 @@ namespace Turbocharged.NSQ
 
             _messageHandler = handler;
             await SendCommandAsync(new Subscribe(topic, channel)).ConfigureAwait(false);
-            await SendCommandAsync(new Ready(ConsumerOptions.MaxInFlight)).ConfigureAwait(false);
 
             // Begin the worker thread which receives and dispatches messages
             _workerThread = new Thread(MessageReceiverLoop);
@@ -137,6 +136,11 @@ namespace Turbocharged.NSQ
                     InternalMessages("Worker thread threw exception: " + ex.Message);
                 }
             }
+        }
+
+        public Task SetMaxInFlight(int maxInFlight)
+        {
+            return SendCommandAsync(new Ready(maxInFlight));
         }
 
         internal Task SendCommandAsync(ICommand command)
