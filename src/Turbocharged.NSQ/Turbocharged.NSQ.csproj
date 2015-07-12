@@ -57,6 +57,7 @@
     <Compile Include="Commands\Subscribe.cs" />
     <Compile Include="NsqProducer.cs" />
     <Compile Include="NsqStatistics.cs" />
+    <Compile Include="ReliableConnection.cs" />
     <Compile Include="TopicAndChannel.cs" />
     <Compile Include="NsqTcpConnection.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

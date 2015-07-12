@@ -79,6 +79,9 @@ namespace Turbocharged.NSQ
                 if (offset == count) break;
             }
 
+            if (bytesLeft > 0)
+                throw new SocketException((int)SocketError.SocketError);
+
             return buffer;
         }
     }
