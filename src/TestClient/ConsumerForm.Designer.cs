@@ -47,7 +47,7 @@
             // Port
             // 
             this.Port.Font = new System.Drawing.Font("Consolas", 8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.Port.Location = new System.Drawing.Point(95, 44);
+            this.Port.Location = new System.Drawing.Point(127, 44);
             this.Port.Name = "Port";
             this.Port.Size = new System.Drawing.Size(72, 26);
             this.Port.TabIndex = 8;
@@ -74,9 +74,9 @@
             // Host
             // 
             this.Host.Font = new System.Drawing.Font("Consolas", 8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.Host.Location = new System.Drawing.Point(95, 12);
+            this.Host.Location = new System.Drawing.Point(127, 12);
             this.Host.Name = "Host";
-            this.Host.Size = new System.Drawing.Size(253, 26);
+            this.Host.Size = new System.Drawing.Size(221, 26);
             this.Host.TabIndex = 5;
             this.Host.Text = "localhost";
             // 
@@ -92,6 +92,9 @@
             // 
             // ReceivedMessages
             // 
+            this.ReceivedMessages.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
             this.ReceivedMessages.FormattingEnabled = true;
             this.ReceivedMessages.ItemHeight = 20;
             this.ReceivedMessages.Location = new System.Drawing.Point(12, 196);
@@ -121,11 +124,11 @@
             // TopicTextBox
             // 
             this.TopicTextBox.Font = new System.Drawing.Font("Consolas", 8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.TopicTextBox.Location = new System.Drawing.Point(95, 76);
+            this.TopicTextBox.Location = new System.Drawing.Point(127, 76);
             this.TopicTextBox.Name = "TopicTextBox";
-            this.TopicTextBox.Size = new System.Drawing.Size(253, 26);
+            this.TopicTextBox.Size = new System.Drawing.Size(221, 26);
             this.TopicTextBox.TabIndex = 12;
-            this.TopicTextBox.Text = "foo";
+            this.TopicTextBox.Text = "signups";
             // 
             // label4
             // 
@@ -139,11 +142,11 @@
             // ChannelTextBox
             // 
             this.ChannelTextBox.Font = new System.Drawing.Font("Consolas", 8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.ChannelTextBox.Location = new System.Drawing.Point(95, 108);
+            this.ChannelTextBox.Location = new System.Drawing.Point(127, 108);
             this.ChannelTextBox.Name = "ChannelTextBox";
-            this.ChannelTextBox.Size = new System.Drawing.Size(253, 26);
+            this.ChannelTextBox.Size = new System.Drawing.Size(221, 26);
             this.ChannelTextBox.TabIndex = 14;
-            this.ChannelTextBox.Text = "bar";
+            this.ChannelTextBox.Text = "email";
             // 
             // ReadyButton
             // 
@@ -158,9 +161,9 @@
             // ReadyTextBox
             // 
             this.ReadyTextBox.Font = new System.Drawing.Font("Consolas", 8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.ReadyTextBox.Location = new System.Drawing.Point(95, 140);
+            this.ReadyTextBox.Location = new System.Drawing.Point(127, 140);
             this.ReadyTextBox.Name = "ReadyTextBox";
-            this.ReadyTextBox.Size = new System.Drawing.Size(253, 26);
+            this.ReadyTextBox.Size = new System.Drawing.Size(221, 26);
             this.ReadyTextBox.TabIndex = 18;
             this.ReadyTextBox.Text = "3";
             // 

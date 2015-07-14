@@ -35,8 +35,12 @@
             this.label1 = new System.Windows.Forms.Label();
             this.Host = new System.Windows.Forms.TextBox();
             this.SendButton = new System.Windows.Forms.Button();
-            this.MessageTextBox = new System.Windows.Forms.TextBox();
+            this.CountControl = new System.Windows.Forms.NumericUpDown();
+            this.label4 = new System.Windows.Forms.Label();
             this.label5 = new System.Windows.Forms.Label();
+            this.StatusLabel = new System.Windows.Forms.Label();
+            this.SendMultipleButton = new System.Windows.Forms.Button();
+            ((System.ComponentModel.ISupportInitialize)(this.CountControl)).BeginInit();
             this.SuspendLayout();
             // 
             // label3
@@ -55,7 +59,7 @@
             this.TopicTextBox.Name = "TopicTextBox";
             this.TopicTextBox.Size = new System.Drawing.Size(253, 26);
             this.TopicTextBox.TabIndex = 20;
-            this.TopicTextBox.Text = "foo";
+            this.TopicTextBox.Text = "signups";
             // 
             // Port
             // 
@@ -95,39 +99,88 @@
             // 
             // SendButton
             // 
-            this.SendButton.Location = new System.Drawing.Point(125, 172);
+            this.SendButton.Location = new System.Drawing.Point(125, 140);
             this.SendButton.Name = "SendButton";
-            this.SendButton.Size = new System.Drawing.Size(140, 58);
+            this.SendButton.Size = new System.Drawing.Size(182, 58);
             this.SendButton.TabIndex = 24;
-            this.SendButton.Text = "Send";
+            this.SendButton.Text = "Send Individually";
             this.SendButton.UseVisualStyleBackColor = true;
             this.SendButton.Click += new System.EventHandler(this.ConnectButton_Click);
             // 
-            // MessageTextBox
+            // CountControl
             // 
-            this.MessageTextBox.Font = new System.Drawing.Font("Consolas", 8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.MessageTextBox.Location = new System.Drawing.Point(125, 140);
-            this.MessageTextBox.Name = "MessageTextBox";
-            this.MessageTextBox.Size = new System.Drawing.Size(253, 26);
-            this.MessageTextBox.TabIndex = 25;
-            this.MessageTextBox.Text = "Hello!";
+            this.CountControl.Increment = new decimal(new int[] {
+            10,
+            0,
+            0,
+            0});
+            this.CountControl.Location = new System.Drawing.Point(125, 108);
+            this.CountControl.Maximum = new decimal(new int[] {
+            1000,
+            0,
+            0,
+            0});
+            this.CountControl.Minimum = new decimal(new int[] {
+            1,
+            0,
+            0,
+            0});
+            this.CountControl.Name = "CountControl";
+            this.CountControl.Size = new System.Drawing.Size(120, 26);
+            this.CountControl.TabIndex = 27;
+            this.CountControl.Value = new decimal(new int[] {
+            1,
+            0,
+            0,
+            0});
+            // 
+            // label4
+            // 
+            this.label4.AutoSize = true;
+            this.label4.Location = new System.Drawing.Point(13, 110);
+            this.label4.Name = "label4";
+            this.label4.Size = new System.Drawing.Size(52, 20);
+            this.label4.TabIndex = 28;
+            this.label4.Text = "Count";
             // 
             // label5
             // 
             this.label5.AutoSize = true;
-            this.label5.Location = new System.Drawing.Point(13, 142);
+            this.label5.Location = new System.Drawing.Point(14, 254);
             this.label5.Name = "label5";
-            this.label5.Size = new System.Drawing.Size(74, 20);
-            this.label5.TabIndex = 26;
-            this.label5.Text = "Message";
+            this.label5.Size = new System.Drawing.Size(56, 20);
+            this.label5.TabIndex = 29;
+            this.label5.Text = "Status";
+            // 
+            // StatusLabel
+            // 
+            this.StatusLabel.AutoSize = true;
+            this.StatusLabel.Location = new System.Drawing.Point(121, 254);
+            this.StatusLabel.Name = "StatusLabel";
+            this.StatusLabel.Size = new System.Drawing.Size(35, 20);
+            this.StatusLabel.TabIndex = 30;
+            this.StatusLabel.Text = "Idle";
+            // 
+            // SendMultipleButton
+            // 
+            this.SendMultipleButton.Location = new System.Drawing.Point(313, 140);
+            this.SendMultipleButton.Name = "SendMultipleButton";
+            this.SendMultipleButton.Size = new System.Drawing.Size(182, 58);
+            this.SendMultipleButton.TabIndex = 31;
+            this.SendMultipleButton.Text = "Send Multiple";
+            this.SendMultipleButton.UseVisualStyleBackColor = true;
+            this.SendMultipleButton.Click += new System.EventHandler(this.SendMultipleButton_Click);
             // 
             // ProducerForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(9F, 20F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(656, 735);
+            this.ClientSize = new System.Drawing.Size(656, 379);
+            this.Controls.Add(this.SendMultipleButton);
+            this.Controls.Add(this.StatusLabel);
             this.Controls.Add(this.label5);
-            this.Controls.Add(this.MessageTextBox);
+            this.Controls.Add(this.label4);
+            this.Controls.Add(this.CountControl);
             this.Controls.Add(this.SendButton);
             this.Controls.Add(this.label3);
             this.Controls.Add(this.TopicTextBox);
@@ -137,6 +190,7 @@
             this.Controls.Add(this.Host);
             this.Name = "ProducerForm";
             this.Text = "ProducerForm";
+            ((System.ComponentModel.ISupportInitialize)(this.CountControl)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -151,7 +205,10 @@
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.TextBox Host;
         private System.Windows.Forms.Button SendButton;
-        private System.Windows.Forms.TextBox MessageTextBox;
+        private System.Windows.Forms.NumericUpDown CountControl;
+        private System.Windows.Forms.Label label4;
         private System.Windows.Forms.Label label5;
+        private System.Windows.Forms.Label StatusLabel;
+        private System.Windows.Forms.Button SendMultipleButton;
     }
 }

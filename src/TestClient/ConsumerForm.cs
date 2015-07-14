@@ -6,6 +6,7 @@ using System.Drawing;
 using System.Linq;
 using System.Net;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using Turbocharged.NSQ;
@@ -47,7 +48,9 @@ namespace TestClient
 
         Task c_MessageReceived(Turbocharged.NSQ.Message obj)
         {
-            PostMessage("RECEIVED MESSAGE. Id = " + obj.Id + ", Attempts = " + obj.Attempts);
+            var data = BitConverter.ToString(obj.Data, 0);
+            var message = string.Format("RECEIVED MESSAGE. Id = {0}, Msg = {1}", obj.Id, data);
+            PostMessage(message);
             return Task.FromResult(0);
         }
 
@@ -58,10 +61,11 @@ namespace TestClient
 
         void PostMessage(string obj)
         {
+            var threadId = Thread.CurrentThread.ManagedThreadId;
             Invoke((Action)(() =>
             {
-                _messages.Add(obj);
-                ReceivedMessages.TopIndex = ReceivedMessages.Items.Count - 1;
+                _messages.Add(obj + " (ThreadId = " + threadId + ")");
+                ReceivedMessages.SelectedIndex = ReceivedMessages.Items.Count - 1;
             }));
         }
 
