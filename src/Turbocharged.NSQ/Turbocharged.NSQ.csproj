@@ -43,6 +43,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BackoffStrategies.cs" />
     <Compile Include="Commands\Finish.cs" />
     <Compile Include="Frame.cs" />
     <Compile Include="Commands\ICommand.cs" />

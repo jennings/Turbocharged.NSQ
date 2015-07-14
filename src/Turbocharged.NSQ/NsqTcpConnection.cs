@@ -36,13 +36,14 @@ namespace Turbocharged.NSQ
 
             InternalMessages("TCP client starting");
             _disposed = false;
-            _connection = new ReliableConnection(_endPoint, _consumerOptions);
+            _connection = new ReliableConnection(_endPoint, _consumerOptions, new ExponentialBackoffStrategy(TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(60)));
             _connection.InternalMessages += InternalMessages;
             await _connection.ConnectAsync(topic, channel).ConfigureAwait(false);
             InternalMessages("TCP client started");
 
             // Begin the worker thread which receives and dispatches messages
             _workerThread = new Thread(MessageReceiverLoop);
+            _workerThread.Name = "Turbocharged.NSQ Worker";
             InternalMessages("Worker thread starting");
             _workerThread.Start();
             InternalMessages("Worker thread started");

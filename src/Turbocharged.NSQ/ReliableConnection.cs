@@ -18,13 +18,15 @@ namespace Turbocharged.NSQ
         ConsumerOptions _options;
         Topic _topic;
         Channel _channel;
+        IBackoffStrategy _backoffFactory;
 
         public event Action<string> InternalMessages;
 
-        public ReliableConnection(DnsEndPoint endPoint, ConsumerOptions options)
+        public ReliableConnection(DnsEndPoint endPoint, ConsumerOptions options, IBackoffStrategy backoffFactory)
         {
             _endPoint = endPoint;
             _options = options;
+            _backoffFactory = backoffFactory;
         }
 
         public void Dispose()
@@ -39,12 +41,21 @@ namespace Turbocharged.NSQ
         {
             _topic = topic;
             _channel = channel;
-            const int RECONNECT_TIMEOUT = 15000;
+            var backoff = _backoffFactory.Create();
+            TimeSpan delay;
 
             if (initialDelay)
             {
-                PublishInternalMessage("Waiting 15s to connect");
-                Task.Delay(RECONNECT_TIMEOUT).Wait();
+                if (backoff.TryGetNextDelay(out delay))
+                {
+                    PublishInternalMessage("Waiting " + (int)delay.Milliseconds + "ms to connect");
+                    Task.Delay(delay).Wait();
+                }
+                else
+                {
+                    PublishInternalMessage("Not reconnecting");
+                    return;
+                }
             }
 
             do
@@ -61,9 +72,15 @@ namespace Turbocharged.NSQ
                 }
                 catch (SocketException ex)
                 {
-                    // TODO: Backoff strategy
-                    PublishInternalMessage("SocketException (waiting 15s): " + ex.Message);
-                    Task.Delay(RECONNECT_TIMEOUT).Wait();
+                    if (backoff.TryGetNextDelay(out delay))
+                    {
+                        PublishInternalMessage("SocketException (waiting " + (int)delay.TotalMilliseconds + "ms): " + ex.Message);
+                        Task.Delay(delay).Wait();
+                    }
+                    else
+                    {
+                        return;
+                    }
                 }
             } while (true);
         }
