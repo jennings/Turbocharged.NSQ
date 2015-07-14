@@ -68,5 +68,14 @@ namespace Turbocharged.NSQ.Tests
             Assert.NotNull(stats.Version);
             Assert.NotEmpty(stats.Topics);
         }
+
+        [Fact]
+        public async Task PublishMultipleWorks()
+        {
+            var message1 = new byte[] { 1, 1, 1 };
+            var message2 = new byte[] { 2, 2, 2 };
+            byte[][] messages = new[] { message1, message2 };
+            await prod.PublishAsync(topic, messages);
+        }
     }
 }

@@ -96,6 +96,31 @@ namespace Turbocharged.NSQ
             return PostAsync("/pub?topic=" + topic, data, _ => true);
         }
 
+        public Task PublishAsync(Topic topic, byte[][] messages)
+        {
+            var dataLength = messages.Sum(msg => msg.Length);
+            var totalLength = dataLength + (4 * messages.Length) + 4;
+            var totalArray = new byte[totalLength];
+
+            Array.Copy(BitConverter.GetBytes(messages.Length), totalArray, 4);
+            if (BitConverter.IsLittleEndian)
+                Array.Reverse(totalArray, 0, 4);
+
+            int messageLength, offsetIntoTotalArray = 4;
+            for (int i = 0; i < messages.Length; i++)
+            {
+                messageLength = messages[i].Length;
+                Array.Copy(BitConverter.GetBytes(messageLength), 0, totalArray, offsetIntoTotalArray, 4);
+                if (BitConverter.IsLittleEndian)
+                    Array.Reverse(totalArray, offsetIntoTotalArray, 4);
+                offsetIntoTotalArray += 4;
+                Array.Copy(messages[i], 0, totalArray, offsetIntoTotalArray, messageLength);
+                offsetIntoTotalArray += messageLength;
+            }
+
+            return PostAsync("/mpub?binary=true&topic=" + topic, totalArray, _ => true);
+        }
+
         Task<T> PostAsync<T>(string url, Func<byte[], T> handler)
         {
             return PostAsync<T>(url, EMPTY, handler);
