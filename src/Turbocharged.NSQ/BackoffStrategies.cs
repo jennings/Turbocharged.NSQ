@@ -13,7 +13,7 @@ namespace Turbocharged.NSQ
 
     interface IBackoffLimiter
     {
-        bool TryGetNextDelay(out TimeSpan delay);
+        bool ShouldReconnect(out TimeSpan delay);
     }
 
     class FixedDelayBackoffStrategy : IBackoffStrategy
@@ -37,7 +37,7 @@ namespace Turbocharged.NSQ
                 _delay = delay;
             }
 
-            public bool TryGetNextDelay(out TimeSpan delay)
+            public bool ShouldReconnect(out TimeSpan delay)
             {
                 delay = _delay;
                 return true;
@@ -69,7 +69,7 @@ namespace Turbocharged.NSQ
                 _maxDelay = maxDelay;
             }
 
-            public bool TryGetNextDelay(out TimeSpan delay)
+            public bool ShouldReconnect(out TimeSpan delay)
             {
                 delay = _currentDelay;
                 var nextDelay = _currentDelay.Add(_currentDelay);
@@ -88,7 +88,7 @@ namespace Turbocharged.NSQ
 
         class NoRetryBackoffLimiter : IBackoffLimiter
         {
-            public bool TryGetNextDelay(out TimeSpan delay)
+            public bool ShouldReconnect(out TimeSpan delay)
             {
                 delay = TimeSpan.Zero;
                 return false;

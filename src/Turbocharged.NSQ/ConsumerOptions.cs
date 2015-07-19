@@ -28,12 +28,16 @@ namespace Turbocharged.NSQ
         public string ClientId { get; set; }
         public string HostName { get; set; }
         public int MaxInFlight { get; set; }
+        public TimeSpan ReconnectionDelay { get; set; }
+        public TimeSpan ReconnectionMaxDelay { get; set; }
 
         public ConsumerOptions()
         {
             ClientId = "Turbocharged.NSQ";
             HostName = Environment.MachineName;
             MaxInFlight = 2500;
+            ReconnectionDelay = TimeSpan.FromSeconds(1);
+            ReconnectionMaxDelay = TimeSpan.FromSeconds(30);
             LookupdEndPoints = new HashSet<DnsEndPoint>();
             NsqdEndPoints = new HashSet<DnsEndPoint>();
         }

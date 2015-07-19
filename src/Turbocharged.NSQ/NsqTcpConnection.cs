@@ -21,18 +21,18 @@ namespace Turbocharged.NSQ
 
         readonly CancellationTokenSource _connectionClosedSource;
         readonly CancellationToken _connectionClosedToken;
-        readonly ConsumerOptions _consumerOptions;
+        readonly ConsumerOptions _options;
         readonly Topic _topic;
         readonly Channel _channel;
         readonly DnsEndPoint _endPoint;
         readonly HandlerFunc _messageHandler;
-        IBackoffStrategy _backoffStrategy;
-        Thread _workerThread;
-        IdentifyResponse _identifyResponse;
-        bool _disposed = false;
+        readonly IBackoffStrategy _backoffStrategy;
+        readonly Thread _workerThread;
 
         readonly object _connectionSwapLock = new object();
         readonly object _connectionSwapInProgressLock = new object();
+
+        IdentifyResponse _identifyResponse;
         NetworkStream _stream;
         TaskCompletionSource<bool> _nextReconnectionTaskSource = new TaskCompletionSource<bool>();
 
@@ -40,13 +40,17 @@ namespace Turbocharged.NSQ
         NsqTcpConnection(DnsEndPoint endPoint, ConsumerOptions options, Topic topic, Channel channel, HandlerFunc handler)
         {
             _endPoint = endPoint;
-            _consumerOptions = options;
+            _options = options;
             _topic = topic;
             _channel = channel;
             _messageHandler = handler;
+            _backoffStrategy = new ExponentialBackoffStrategy(_options.ReconnectionDelay, _options.ReconnectionMaxDelay);
 
             _connectionClosedSource = new CancellationTokenSource();
             _connectionClosedToken = _connectionClosedSource.Token;
+
+            _workerThread = new Thread(WorkerLoop);
+            _workerThread.Name = "Turbocharged.NSQ Worker";
         }
 
         public static NsqTcpConnection Connect(DnsEndPoint endPoint, ConsumerOptions options, Topic topic, Channel channel, HandlerFunc handler)
@@ -58,8 +62,6 @@ namespace Turbocharged.NSQ
             //   b. Handshaking
             //   c. Dispatching received messages to the thread pool
 
-            nsq._workerThread = new Thread(nsq.WorkerLoop);
-            nsq._workerThread.Name = "Turbocharged.NSQ Worker";
             nsq.InternalMessages("Worker thread starting");
             nsq._workerThread.Start();
             nsq.InternalMessages("Worker thread started");
@@ -73,9 +75,8 @@ namespace Turbocharged.NSQ
         {
             lock (_disposeLock)
             {
-                if (!_disposed)
+                if (!_connectionClosedToken.IsCancellationRequested)
                 {
-                    _disposed = true;
                     _connectionClosedSource.Cancel();
                     _connectionClosedSource.Dispose();
                 }
@@ -123,46 +124,74 @@ namespace Turbocharged.NSQ
         void WorkerLoop()
         {
             bool firstConnectionAttempt = true;
+            bool connected = false;
             TcpClient client = null;
             FrameReader reader = null;
+            IBackoffLimiter backoffLimiter = null;
             IDisposable cancellationRegistration = Disposable.Empty;
+
             while (true)
             {
                 try
                 {
-                    if (client == null || !client.Connected)
+                    if (_connectionClosedToken.IsCancellationRequested)
+                    {
+                        return;
+                    }
+
+                    if (!connected)
                     {
                         lock (_connectionSwapLock)
                         {
-                            if (client == null || !client.Connected)
+                            if (firstConnectionAttempt)
                             {
-                                if (!firstConnectionAttempt)
-                                {
-                                    // Backoff strategy
-                                }
                                 firstConnectionAttempt = false;
+                            }
+                            else
+                            {
+                                if (backoffLimiter == null)
+                                    backoffLimiter = _backoffStrategy.Create();
 
-                                lock (_connectionSwapInProgressLock)
+                                TimeSpan delay;
+                                if (backoffLimiter.ShouldReconnect(out delay))
                                 {
-                                    if (client != null)
-                                    {
-                                        cancellationRegistration.Dispose();
-                                        ((IDisposable)client).Dispose();
-                                    }
-
-                                    InternalMessages("TCP client starting");
-                                    client = new TcpClient(_endPoint.Host, _endPoint.Port);
-                                    cancellationRegistration = _connectionClosedToken.Register(() => ((IDisposable)client).Dispose(), false);
-                                    InternalMessages("TCP client started");
-
-                                    _stream = client.GetStream();
-                                    reader = new FrameReader(_stream);
-
-                                    Handshake(_stream, reader);
-
-                                    _nextReconnectionTaskSource.SetResult(true);
-                                    _nextReconnectionTaskSource = new TaskCompletionSource<bool>();
+                                    InternalMessages("Delaying " + (int)delay.TotalMilliseconds + "ms before reconnecting");
+                                    Thread.Sleep(delay);
                                 }
+                                else
+                                {
+                                    // We give up
+                                    InternalMessages("Abandoning connection");
+                                    Dispose();
+                                    return;
+                                }
+                            }
+
+                            lock (_connectionSwapInProgressLock)
+                            {
+                                if (client != null)
+                                {
+                                    cancellationRegistration.Dispose();
+                                    ((IDisposable)client).Dispose();
+                                }
+
+                                InternalMessages("TCP client starting");
+                                client = new TcpClient(_endPoint.Host, _endPoint.Port);
+                                cancellationRegistration = _connectionClosedToken.Register(() => ((IDisposable)client).Dispose(), false);
+                                connected = true;
+                                InternalMessages("TCP client started");
+
+                                _stream = client.GetStream();
+                                reader = new FrameReader(_stream);
+
+                                Handshake(_stream, reader);
+
+
+                                // Start a new backoff cycle next time we disconnect
+                                backoffLimiter = null;
+
+                                _nextReconnectionTaskSource.SetResult(true);
+                                _nextReconnectionTaskSource = new TaskCompletionSource<bool>();
                             }
                         }
                     }
@@ -204,11 +233,13 @@ namespace Turbocharged.NSQ
                 catch (IOException ex)
                 {
                     InternalMessages("EXCEPTION: " + ex.Message);
+                    connected = false;
                     continue;
                 }
                 catch (SocketException ex)
                 {
                     InternalMessages("EXCEPTION: " + ex.Message);
+                    connected = false;
                     continue;
                 }
             }
@@ -230,7 +261,7 @@ namespace Turbocharged.NSQ
 
         IdentifyResponse Identify(NetworkStream stream, FrameReader reader)
         {
-            var identify = new Identify(_consumerOptions);
+            var identify = new Identify(_options);
             SendCommand(stream, identify);
             var frame = reader.ReadFrame();
             if (frame.Type != FrameType.Result)
