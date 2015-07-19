@@ -51,7 +51,7 @@
     <Compile Include="Commands\Identify.cs" />
     <Compile Include="Message.cs" />
     <Compile Include="FrameReader.cs" />
-    <Compile Include="LookupServer.cs" />
+    <Compile Include="NsqLookup.cs" />
     <Compile Include="Addresses.cs" />
     <Compile Include="Commands\Nop.cs" />
     <Compile Include="Commands\Ready.cs" />

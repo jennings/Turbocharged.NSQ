@@ -11,12 +11,12 @@ using Newtonsoft.Json.Linq;
 
 namespace Turbocharged.NSQ
 {
-    public class LookupServer
+    public class NsqLookup
     {
         readonly WebClient _webClient = new WebClient();
         readonly SemaphoreSlim _webClientLock = new SemaphoreSlim(1, 1);
 
-        public LookupServer(string host, int port)
+        public NsqLookup(string host, int port)
         {
             _webClient.BaseAddress = new UriBuilder()
             {

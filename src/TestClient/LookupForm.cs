@@ -21,14 +21,14 @@ namespace TestClient
             Port.Text = port.ToString();
         }
 
-        LookupServer CreateConnection()
+        NsqLookup CreateConnection()
         {
             var host = Host.Text;
             var port = int.Parse(Port.Text);
-            return new LookupServer(host, port);
+            return new NsqLookup(host, port);
         }
 
-        async Task DoUIStuff(Func<LookupServer, Task> action)
+        async Task DoUIStuff(Func<NsqLookup, Task> action)
         {
             try
             {
