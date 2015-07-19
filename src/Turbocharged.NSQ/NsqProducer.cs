@@ -134,6 +134,24 @@ namespace Turbocharged.NSQ
                 byte[] response = await _webClient.UploadDataTaskAsync(url, data).ConfigureAwait(false);
                 return handler(response);
             }
+            catch (WebException ex)
+            {
+                if (ex.Response == null)
+                    throw;
+
+                // Even if we get a 4xx, we should be able to continue
+                using (var responseStream = ex.Response.GetResponseStream())
+                {
+                    // Even 4xx errors should send us content
+                    var responseLength = (int)responseStream.Length;
+                    if (responseLength == 0)
+                        throw;
+
+                    var response = new byte[responseLength];
+                    responseStream.Read(response, 0, responseLength);
+                    return handler(response);
+                }
+            }
             finally
             {
                 _webClientLock.Release();
