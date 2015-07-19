@@ -1,7 +1,7 @@
 Turbocharged.NSQ
 ================
 
-[![Build status](https://example.com)](https://ci.appveyor.com/project/jennings/turbocharged-nsq)
+[![Build status](https://ci.appveyor.com/api/projects/status/nf243s9eueh6g23r?svg=true)](https://ci.appveyor.com/project/jennings/turbocharged-nsq)
 [![NuGet](https://img.shields.io/nuget/v/Turbocharged.NSQ.svg)](http://www.nuget.org/packages/Turbocharged.NSQ/)
 
 An [NSQ][nsq] .NET client library filled with `async` happiness.
