@@ -24,10 +24,6 @@ namespace TestClient
             Host.Text = host;
             Port.Text = port.ToString();
             ReceivedMessages.DataSource = _messages;
-
-            var options = ConsumerOptions.Parse(string.Format("nsqd={0}:{1}", host, port));
-            _nsq = new NsqTcpConnection(new DnsEndPoint(host, port), options);
-            _nsq.InternalMessages += _nsq_InternalMessages;
         }
 
         void _nsq_InternalMessages(string obj)
@@ -37,13 +33,19 @@ namespace TestClient
 
         async void ConnectButton_Click(object sender, EventArgs e)
         {
+            var host = Host.Text;
+            var port = int.Parse(Port.Text);
             var topic = TopicTextBox.Text;
             var channel = ChannelTextBox.Text;
-            await _nsq.ConnectAsync(topic, channel, async msg =>
+
+            var options = ConsumerOptions.Parse(string.Format("nsqd={0}:{1}", host, port));
+            _nsq = NsqTcpConnection.Connect(new DnsEndPoint(host, port), options, topic, channel, async msg =>
             {
                 await c_MessageReceived(msg);
                 await msg.FinishAsync();
             });
+            _nsq.InternalMessages += _nsq_InternalMessages;
+
         }
 
         Task c_MessageReceived(Turbocharged.NSQ.Message obj)
@@ -56,7 +58,7 @@ namespace TestClient
 
         void ConsumerForm_FormClosing(object sender, FormClosingEventArgs e)
         {
-            _nsq.Close();
+            _nsq.Dispose();
         }
 
         void PostMessage(string obj)
@@ -71,13 +73,13 @@ namespace TestClient
 
         void DisconnectButton_Click(object sender, EventArgs e)
         {
-            _nsq.Close();
+            _nsq.Dispose();
         }
 
         async void ReadyButton_Click(object sender, EventArgs e)
         {
             var maxInFlight = int.Parse(ReadyTextBox.Text);
-            await _nsq.SetMaxInFlight(maxInFlight);
+            await _nsq.SetMaxInFlightAsync(maxInFlight);
         }
     }
 }

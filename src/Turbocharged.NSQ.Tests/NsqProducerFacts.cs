@@ -13,21 +13,24 @@ namespace Turbocharged.NSQ.Tests
     {
         #region Setup
 
+        DnsEndPoint endPoint;
         Topic topic = "foo";
         Channel channel = "bar";
+        ConsumerOptions options;
         NsqTcpConnection conn;
         NsqProducer prod;
 
         public NsqProducerFacts()
         {
-            var options = new ConsumerOptions();
-            conn = new NsqTcpConnection(new DnsEndPoint(Settings.NsqdHostName, Settings.NsqdTcpPort), options);
+            endPoint = new DnsEndPoint(Settings.NsqdHostName, Settings.NsqdTcpPort);
+            options = new ConsumerOptions();
             prod = new NsqProducer(Settings.NsqdHostName, Settings.NsqdHttpPort);
         }
 
         public void Dispose()
         {
-            conn.Dispose();
+            if (conn != null)
+                conn.Dispose();
         }
 
         Task EmptyChannelAsync(Topic topic, Channel channel)
@@ -48,12 +51,12 @@ namespace Turbocharged.NSQ.Tests
 
             // Now try to receive anything
             bool receivedData = false;
-            await conn.ConnectAsync(topic, channel, async msg =>
+            conn = NsqTcpConnection.Connect(endPoint, options, topic, channel, async msg =>
             {
                 receivedData = true;
                 await msg.FinishAsync();
             });
-            await conn.SetMaxInFlight(100);
+            await conn.SetMaxInFlightAsync(100);
             await Task.Delay(100);
 
             Assert.False(receivedData);

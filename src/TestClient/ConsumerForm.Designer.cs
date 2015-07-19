@@ -165,7 +165,7 @@
             this.ReadyTextBox.Name = "ReadyTextBox";
             this.ReadyTextBox.Size = new System.Drawing.Size(221, 26);
             this.ReadyTextBox.TabIndex = 18;
-            this.ReadyTextBox.Text = "3";
+            this.ReadyTextBox.Text = "100";
             // 
             // label5
             // 

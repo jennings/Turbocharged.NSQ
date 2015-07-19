@@ -110,13 +110,13 @@
             // CountControl
             // 
             this.CountControl.Increment = new decimal(new int[] {
-            10,
+            100,
             0,
             0,
             0});
             this.CountControl.Location = new System.Drawing.Point(125, 108);
             this.CountControl.Maximum = new decimal(new int[] {
-            1000,
+            1000000,
             0,
             0,
             0});
