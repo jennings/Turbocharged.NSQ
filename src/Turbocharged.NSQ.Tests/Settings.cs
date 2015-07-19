@@ -22,7 +22,7 @@ namespace Turbocharged.NSQ.Tests
         {
             get
             {
-                var tcpPortStr = Environment.GetEnvironmentVariable("NSQD_TCPPORT");
+                var tcpPortStr = Environment.GetEnvironmentVariable("NSQD_TCP_PORT");
                 return int.Parse(tcpPortStr ?? ConfigurationManager.AppSettings["NSQ.TcpPort"]);
             }
         }
@@ -31,10 +31,9 @@ namespace Turbocharged.NSQ.Tests
         {
             get
             {
-                var httpPortStr = Environment.GetEnvironmentVariable("NSQD_HTTPPORT");
+                var httpPortStr = Environment.GetEnvironmentVariable("NSQD_HTTP_PORT");
                 return int.Parse(httpPortStr ?? ConfigurationManager.AppSettings["NSQ.HttpPort"]);
             }
         }
-
     }
 }

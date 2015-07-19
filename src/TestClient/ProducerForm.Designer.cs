@@ -105,7 +105,7 @@
             this.SendButton.TabIndex = 24;
             this.SendButton.Text = "Send Individually";
             this.SendButton.UseVisualStyleBackColor = true;
-            this.SendButton.Click += new System.EventHandler(this.ConnectButton_Click);
+            this.SendButton.Click += new System.EventHandler(this.SendSingleButton_Click);
             // 
             // CountControl
             // 

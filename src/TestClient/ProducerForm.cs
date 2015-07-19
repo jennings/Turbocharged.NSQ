@@ -20,14 +20,23 @@ namespace TestClient
             Port.Text = port.ToString();
         }
 
-        async void ConnectButton_Click(object sender, EventArgs e)
+        NsqProducer CreateProducer()
         {
             var host = Host.Text;
             var port = int.Parse(Port.Text);
-            var topic = TopicTextBox.Text;
-            var producer = new NsqProducer(host, port);
+            return new NsqProducer(host, port);
+        }
 
+        async void SendSingleButton_Click(object sender, EventArgs e)
+        {
             var count = (int)CountControl.Value;
+
+            if (count > 1000)
+                throw new InvalidOperationException("Sorry, not going to send 1000 HTTP requests");
+
+            var topic = TopicTextBox.Text;
+            var producer = CreateProducer();
+
             var tasks = new Task[count];
             var messages = GenerateMessages(count).ToList();
             for (int i = 0; i < count; i++)
@@ -51,10 +60,8 @@ namespace TestClient
 
         async void SendMultipleButton_Click(object sender, EventArgs e)
         {
-            var host = Host.Text;
-            var port = int.Parse(Port.Text);
             var topic = TopicTextBox.Text;
-            var producer = new NsqProducer(host, port);
+            var producer = CreateProducer();
 
             var count = (int)CountControl.Value;
 

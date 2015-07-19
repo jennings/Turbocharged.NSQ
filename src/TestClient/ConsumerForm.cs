@@ -31,7 +31,7 @@ namespace TestClient
             PostMessage("INTERNAL: " + obj);
         }
 
-        async void ConnectButton_Click(object sender, EventArgs e)
+        void ConnectButton_Click(object sender, EventArgs e)
         {
             var host = Host.Text;
             var port = int.Parse(Port.Text);
@@ -58,7 +58,8 @@ namespace TestClient
 
         void ConsumerForm_FormClosing(object sender, FormClosingEventArgs e)
         {
-            _nsq.Dispose();
+            if (_nsq != null)
+                _nsq.Dispose();
         }
 
         void PostMessage(string obj)

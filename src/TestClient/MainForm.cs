@@ -21,7 +21,7 @@ namespace TestClient
         public MainForm()
         {
             lookupHostName = Environment.GetEnvironmentVariable("NSQLOOKUPD_HOSTNAME") ?? "localhost";
-            var lookupPortString = Environment.GetEnvironmentVariable("NSQLOOKUPD_PORT") ?? "4161";
+            var lookupPortString = Environment.GetEnvironmentVariable("NSQLOOKUPD_HTTP_PORT") ?? "4161";
             lookupPort = int.Parse(lookupPortString);
 
             nsqHostName = Environment.GetEnvironmentVariable("NSQD_HOSTNAME") ?? "localhost";
