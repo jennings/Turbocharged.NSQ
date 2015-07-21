@@ -19,11 +19,11 @@ namespace Turbocharged.NSQ
 
         public event Action<string> InternalMessages = _ => { };
 
+        public bool Connected { get; private set; }
+
         readonly CancellationTokenSource _connectionClosedSource;
         readonly CancellationToken _connectionClosedToken;
         readonly ConsumerOptions _options;
-        readonly Topic _topic;
-        readonly Channel _channel;
         readonly DnsEndPoint _endPoint;
         readonly HandlerFunc _messageHandler;
         readonly IBackoffStrategy _backoffStrategy;
@@ -37,14 +37,12 @@ namespace Turbocharged.NSQ
         TaskCompletionSource<bool> _nextReconnectionTaskSource = new TaskCompletionSource<bool>();
 
 
-        NsqTcpConnection(DnsEndPoint endPoint, ConsumerOptions options, Topic topic, Channel channel, HandlerFunc handler)
+        internal NsqTcpConnection(DnsEndPoint endPoint, ConsumerOptions options, IBackoffStrategy backoffStrategy, HandlerFunc handler)
         {
             _endPoint = endPoint;
             _options = options;
-            _topic = topic;
-            _channel = channel;
             _messageHandler = handler;
-            _backoffStrategy = new ExponentialBackoffStrategy(_options.ReconnectionDelay, _options.ReconnectionMaxDelay);
+            _backoffStrategy = backoffStrategy;
 
             _connectionClosedSource = new CancellationTokenSource();
             _connectionClosedToken = _connectionClosedSource.Token;
@@ -53,9 +51,15 @@ namespace Turbocharged.NSQ
             _workerThread.Name = "Turbocharged.NSQ Worker";
         }
 
-        public static NsqTcpConnection Connect(DnsEndPoint endPoint, ConsumerOptions options, Topic topic, Channel channel, HandlerFunc handler)
+        public static NsqTcpConnection Connect(DnsEndPoint endPoint, ConsumerOptions options, HandlerFunc handler)
         {
-            var nsq = new NsqTcpConnection(endPoint, options, topic, channel, handler);
+            var backoffStrategy = new ExponentialBackoffStrategy(TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(30));
+            return Connect(endPoint, options, backoffStrategy, handler);
+        }
+
+        internal static NsqTcpConnection Connect(DnsEndPoint endPoint, ConsumerOptions options, IBackoffStrategy backoffStrategy, HandlerFunc handler)
+        {
+            var nsq = new NsqTcpConnection(endPoint, options, backoffStrategy, handler);
 
             // The worker thread is responsible for:
             //   a. Connecting to NSQ
@@ -124,7 +128,6 @@ namespace Turbocharged.NSQ
         void WorkerLoop()
         {
             bool firstConnectionAttempt = true;
-            bool connected = false;
             TcpClient client = null;
             FrameReader reader = null;
             IBackoffLimiter backoffLimiter = null;
@@ -139,7 +142,7 @@ namespace Turbocharged.NSQ
                         return;
                     }
 
-                    if (!connected)
+                    if (!Connected)
                     {
                         lock (_connectionSwapLock)
                         {
@@ -178,7 +181,7 @@ namespace Turbocharged.NSQ
                                 InternalMessages("TCP client starting");
                                 client = new TcpClient(_endPoint.Host, _endPoint.Port);
                                 cancellationRegistration = _connectionClosedToken.Register(() => ((IDisposable)client).Dispose(), false);
-                                connected = true;
+                                Connected = true;
                                 InternalMessages("TCP client started");
 
                                 _stream = client.GetStream();
@@ -233,13 +236,13 @@ namespace Turbocharged.NSQ
                 catch (IOException ex)
                 {
                     InternalMessages("EXCEPTION: " + ex.Message);
-                    connected = false;
+                    Connected = false;
                     continue;
                 }
                 catch (SocketException ex)
                 {
                     InternalMessages("EXCEPTION: " + ex.Message);
-                    connected = false;
+                    Connected = false;
                     continue;
                 }
             }
@@ -256,7 +259,7 @@ namespace Turbocharged.NSQ
                 throw new NotSupportedException("Authorization is not supported");
             }
 
-            SendCommand(stream, new Subscribe(_topic, _channel));
+            SendCommand(stream, new Subscribe(_options.Topic, _options.Channel));
         }
 
         IdentifyResponse Identify(NetworkStream stream, FrameReader reader)

@@ -41,30 +41,30 @@ namespace Turbocharged.NSQ.Tests
         [Fact]
         public async Task ConnectionClosesProperly()
         {
-            var topic = "foo";
-            var channel = "bar";
-            conn = NsqTcpConnection.Connect(endPoint, options, topic, channel, msg => msg.FinishAsync());
+            options.Topic = "foo";
+            options.Channel = "bar";
+            conn = NsqTcpConnection.Connect(endPoint, options, msg => msg.FinishAsync());
             conn.Dispose();
         }
 
         [Fact]
         public async Task CanReceiveAMessage()
         {
-            var topic = "foo";
-            var channel = "bar";
+            options.Topic = "foo";
+            options.Channel = "bar";
             byte[] expectedData = new byte[] { 1, 2, 3 };
 
-            await EmptyChannelAsync(topic, channel);
+            await EmptyChannelAsync(options.Topic, options.Channel);
 
             var tcs = new TaskCompletionSource<Message>();
             var task = tcs.Task;
-            conn = NsqTcpConnection.Connect(endPoint, options, topic, channel, async msg =>
+            conn = NsqTcpConnection.Connect(endPoint, options, async msg =>
             {
                 await msg.FinishAsync();
                 tcs.TrySetResult(msg);
             });
             await conn.SetMaxInFlightAsync(100);
-            await prod.PublishAsync(topic, expectedData);
+            await prod.PublishAsync(options.Topic, expectedData);
             await Task.WhenAny(task, Task.Delay(1000));
 
             Assert.Equal(TaskStatus.RanToCompletion, task.Status);
@@ -77,12 +77,12 @@ namespace Turbocharged.NSQ.Tests
         [Fact]
         public async Task CanReceiveAtAnAcceptableRate()
         {
-            var topic = "load_test";
-            var channel = "load_test";
-            await EmptyChannelAsync(topic, channel);
+            options.Topic = "load_test";
+            options.Channel = "load_test";
+            await EmptyChannelAsync(options.Topic, options.Channel);
 
             int messagesReceived = 0;
-            conn = NsqTcpConnection.Connect(endPoint, options, topic, channel, async msg =>
+            conn = NsqTcpConnection.Connect(endPoint, options, async msg =>
             {
                 await msg.FinishAsync().ConfigureAwait(false);
                 Interlocked.Increment(ref messagesReceived);
@@ -90,7 +90,7 @@ namespace Turbocharged.NSQ.Tests
 
             await conn.SetMaxInFlightAsync(100);
             var messages = Enumerable.Range(0, 1000).Select(BitConverter.GetBytes).ToArray();
-            await prod.PublishAsync(topic, messages);
+            await prod.PublishAsync(options.Topic, messages);
             await Task.Delay(1000);
             conn.Dispose();
             Assert.InRange(messagesReceived, 500, int.MaxValue);

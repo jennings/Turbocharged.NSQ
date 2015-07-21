@@ -25,6 +25,8 @@ namespace Turbocharged.NSQ
         public ConnectionDiscoveryMode DiscoveryMode { get; set; }
         public HashSet<DnsEndPoint> LookupdEndPoints { get; private set; }
         public HashSet<DnsEndPoint> NsqdEndPoints { get; private set; }
+        public Topic Topic { get; set; }
+        public Channel Channel { get; set; }
         public string ClientId { get; set; }
         public string HostName { get; set; }
         public int MaxInFlight { get; set; }
@@ -85,6 +87,12 @@ namespace Turbocharged.NSQ
 
             if (parts.ContainsKey("maxinflight"))
                 options.MaxInFlight = int.Parse(parts["maxinflight"]);
+
+            if (parts.ContainsKey("topic"))
+                options.Topic = parts["topic"];
+
+            if (parts.ContainsKey("channel"))
+                options.Channel = parts["channel"];
 
             return options;
         }

@@ -14,8 +14,6 @@ namespace Turbocharged.NSQ.Tests
         #region Setup
 
         DnsEndPoint endPoint;
-        Topic topic = "foo";
-        Channel channel = "bar";
         ConsumerOptions options;
         NsqTcpConnection conn;
         NsqProducer prod;
@@ -23,7 +21,11 @@ namespace Turbocharged.NSQ.Tests
         public NsqProducerFacts()
         {
             endPoint = new DnsEndPoint(Settings.NsqdHostName, Settings.NsqdTcpPort);
-            options = new ConsumerOptions();
+            options = new ConsumerOptions()
+            {
+                Topic = "foo",
+                Channel = "bar",
+            };
             prod = new NsqProducer(Settings.NsqdHostName, Settings.NsqdHttpPort);
         }
 
@@ -44,14 +46,14 @@ namespace Turbocharged.NSQ.Tests
         public async Task ProducerCanEmptyAChannel()
         {
             // Put something in the channel
-            await prod.PublishAsync(topic, new byte[] { 1 });
+            await prod.PublishAsync(options.Topic, new byte[] { 1 });
 
             // Now erase it
-            await EmptyChannelAsync(topic, channel);
+            await EmptyChannelAsync(options.Topic, options.Channel);
 
             // Now try to receive anything
             bool receivedData = false;
-            conn = NsqTcpConnection.Connect(endPoint, options, topic, channel, async msg =>
+            conn = NsqTcpConnection.Connect(endPoint, options, async msg =>
             {
                 receivedData = true;
                 await msg.FinishAsync();
@@ -66,7 +68,7 @@ namespace Turbocharged.NSQ.Tests
         public async Task CanGetProducerStats()
         {
             // Ensure something is there
-            await prod.PublishAsync(topic, new byte[] { 1 });
+            await prod.PublishAsync(options.Topic, new byte[] { 1 });
             var stats = await prod.StatisticsAsync();
             Assert.NotNull(stats.Version);
             Assert.NotEmpty(stats.Topics);
@@ -78,7 +80,7 @@ namespace Turbocharged.NSQ.Tests
             var message1 = new byte[] { 1, 1, 1 };
             var message2 = new byte[] { 2, 2, 2 };
             byte[][] messages = new[] { message1, message2 };
-            await prod.PublishAsync(topic, messages);
+            await prod.PublishAsync(options.Topic, messages);
         }
     }
 }

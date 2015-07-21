@@ -35,11 +35,11 @@ namespace TestClient
         {
             var host = Host.Text;
             var port = int.Parse(Port.Text);
-            var topic = TopicTextBox.Text;
-            var channel = ChannelTextBox.Text;
 
             var options = ConsumerOptions.Parse(string.Format("nsqd={0}:{1}", host, port));
-            _nsq = NsqTcpConnection.Connect(new DnsEndPoint(host, port), options, topic, channel, async msg =>
+            options.Topic = TopicTextBox.Text;
+            options.Channel = ChannelTextBox.Text;
+            _nsq = NsqTcpConnection.Connect(new DnsEndPoint(host, port), options, async msg =>
             {
                 await c_MessageReceived(msg);
                 await msg.FinishAsync();
