@@ -45,6 +45,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="BackoffStrategies.cs" />
+    <Compile Include="Commands\ByteArrays.cs" />
     <Compile Include="Commands\Finish.cs" />
     <Compile Include="Frame.cs" />
     <Compile Include="Commands\ICommand.cs" />
@@ -63,7 +64,6 @@
     <Compile Include="TopicAndChannel.cs" />
     <Compile Include="NsqTcpConnection.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Unit.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

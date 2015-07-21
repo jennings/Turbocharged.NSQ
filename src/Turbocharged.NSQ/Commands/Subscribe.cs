@@ -17,14 +17,15 @@ namespace Turbocharged.NSQ
             _channel = channel;
         }
 
+        static readonly byte[] SUB_SPACE = Encoding.ASCII.GetBytes("SUB ");
+
         public byte[] ToByteArray()
         {
-            return new[] { 'S', 'U', 'B', ' ' }
-                .Select(ch => (byte)ch)
+            return SUB_SPACE
                 .Concat(_topic.ToUTF8())
-                .Concat(new[] { (byte)' ' })
+                .Concat(ByteArrays.SPACE)
                 .Concat(_channel.ToUTF8())
-                .Concat(new[] { (byte)'\n' })
+                .Concat(ByteArrays.LF)
                 .ToArray();
         }
     }

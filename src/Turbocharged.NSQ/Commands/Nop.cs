@@ -8,11 +8,11 @@ namespace Turbocharged.NSQ
 {
     class Nop : ICommand
     {
-        static readonly byte[] NOP = new[] { 'N', 'O', 'P', '\n' }.Select(ch => (byte)ch).ToArray();
+        static readonly byte[] NOP_LF = Encoding.ASCII.GetBytes("NOP\n");
 
         public byte[] ToByteArray()
         {
-            return NOP.ToArray();
+            return NOP_LF.ToArray(); // Make a new one
         }
     }
 }

@@ -8,6 +8,8 @@ namespace Turbocharged.NSQ
 {
     class Finish : ICommand
     {
+        static readonly byte[] FIN_SPACE = Encoding.ASCII.GetBytes("FIN ");
+
         Message _message;
 
         public Finish(Message message)
@@ -17,10 +19,9 @@ namespace Turbocharged.NSQ
 
         public byte[] ToByteArray()
         {
-            return new[] { 'F', 'I', 'N', ' ' }
-                .Select(ch => (byte)ch)
+            return FIN_SPACE
                 .Concat(Encoding.UTF8.GetBytes(_message.Id))
-                .Concat(new[] { (byte)'\n' })
+                .Concat(ByteArrays.LF)
                 .ToArray();
         }
     }

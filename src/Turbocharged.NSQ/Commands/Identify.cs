@@ -26,6 +26,8 @@ namespace Turbocharged.NSQ
             };
         }
 
+        static readonly byte[] IDENTIFY_LF = Encoding.ASCII.GetBytes("IDENTIFY\n");
+
         public byte[] ToByteArray()
         {
             byte[] body;
@@ -43,8 +45,7 @@ namespace Turbocharged.NSQ
             if (BitConverter.IsLittleEndian)
                 Array.Reverse(length);
 
-            return new[] { 'I', 'D', 'E', 'N', 'T', 'I', 'F', 'Y', '\n' }
-                .Select(ch => (byte)ch)
+            return IDENTIFY_LF
                 .Concat(length)
                 .Concat(body)
                 .ToArray();

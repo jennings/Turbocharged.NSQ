@@ -15,12 +15,13 @@ namespace Turbocharged.NSQ
             _count = count;
         }
 
+        static readonly byte[] RDY_SPACE = Encoding.ASCII.GetBytes("RDY ");
+
         public byte[] ToByteArray()
         {
-            return new[] { 'R', 'D', 'Y', ' ' }
-                .Select(ch => (byte)ch)
+            return RDY_SPACE
                 .Concat(Encoding.UTF8.GetBytes(_count.ToString()))
-                .Concat(new[] { (byte)'\n' })
+                .Concat(ByteArrays.LF)
                 .ToArray();
         }
     }

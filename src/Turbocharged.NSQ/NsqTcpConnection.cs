@@ -14,8 +14,8 @@ namespace Turbocharged.NSQ
 {
     public sealed class NsqTcpConnection : IDisposable
     {
-        static readonly byte[] HEARTBEAT = new byte[] { 95, 104, 101, 97, 114, 116, 98, 101, 97, 116, 95 }; // "_heartbeat_"
-        static readonly byte[] MAGIC_V2 = new byte[] { 32, 32, 86, 50 }; // "  V2"
+        static readonly byte[] HEARTBEAT = Encoding.ASCII.GetBytes("_heartbeat_");
+        static readonly byte[] MAGIC_V2 = Encoding.ASCII.GetBytes("  V2");
 
         public event Action<string> InternalMessages = _ => { };
 
