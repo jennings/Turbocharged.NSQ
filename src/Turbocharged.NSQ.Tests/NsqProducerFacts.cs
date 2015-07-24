@@ -79,7 +79,7 @@ namespace Turbocharged.NSQ.Tests
         {
             var message1 = new byte[] { 1, 1, 1 };
             var message2 = new byte[] { 2, 2, 2 };
-            byte[][] messages = new[] { message1, message2 };
+            MessageBody[] messages = new MessageBody[] { message1, message2 };
             await prod.PublishAsync(options.Topic, messages);
         }
     }

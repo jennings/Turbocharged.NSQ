@@ -50,7 +50,7 @@ namespace TestClient
 
         Task c_MessageReceived(Turbocharged.NSQ.Message obj)
         {
-            var data = BitConverter.ToString(obj.Data, 0);
+            var data = BitConverter.ToString(obj.Body, 0);
             var message = string.Format("RECEIVED MESSAGE. Id = {0}, Msg = {1}", obj.Id, data);
             PostMessage(message);
             return Task.FromResult(0);

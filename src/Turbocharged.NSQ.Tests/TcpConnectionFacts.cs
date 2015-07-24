@@ -69,7 +69,7 @@ namespace Turbocharged.NSQ.Tests
 
             Assert.Equal(TaskStatus.RanToCompletion, task.Status);
 
-            byte[] receivedData = task.Result.Data;
+            byte[] receivedData = task.Result.Body;
             Assert.NotNull(receivedData);
             Assert.True(expectedData.SequenceEqual(receivedData));
         }
@@ -89,7 +89,7 @@ namespace Turbocharged.NSQ.Tests
             });
 
             await conn.SetMaxInFlightAsync(100);
-            var messages = Enumerable.Range(0, 1000).Select(BitConverter.GetBytes).ToArray();
+            var messages = Enumerable.Range(0, 1000).Select(i => (MessageBody)BitConverter.GetBytes(i)).ToArray();
             await prod.PublishAsync(options.Topic, messages);
             await Task.Delay(1000);
             conn.Dispose();

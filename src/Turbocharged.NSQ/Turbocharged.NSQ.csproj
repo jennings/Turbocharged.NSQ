@@ -53,6 +53,7 @@
     <Compile Include="Commands\Identify.cs" />
     <Compile Include="Message.cs" />
     <Compile Include="FrameReader.cs" />
+    <Compile Include="MessageBody.cs" />
     <Compile Include="NsqLookup.cs" />
     <Compile Include="Addresses.cs" />
     <Compile Include="Commands\Nop.cs" />

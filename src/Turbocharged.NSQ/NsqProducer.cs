@@ -88,19 +88,23 @@ namespace Turbocharged.NSQ
             return GetAsync("/stats?format=json", response => response["data"].ToObject<NsqStatistics>());
         }
 
-        public Task PublishAsync(Topic topic, byte[] data)
+        public Task PublishAsync(Topic topic, MessageBody data)
         {
-            if (data == null || data.Length == 0)
+            if (data == null || data.IsNull)
                 throw new ArgumentOutOfRangeException("data", "Must provide data to publish");
 
             return PostAsync("/pub?topic=" + topic, data, _ => true);
         }
 
-        public Task PublishAsync(Topic topic, byte[][] messages)
+        public Task PublishAsync(Topic topic, MessageBody[] messages)
         {
-            var dataLength = messages.Sum(msg => msg.Length);
-            var totalLength = dataLength + (4 * messages.Length) + 4;
-            var totalArray = new byte[totalLength];
+            byte[] totalArray;
+            checked
+            {
+                var dataLength = messages.Sum(msg => ((byte[])msg).Length);
+                var totalLength = dataLength + (4 * messages.Length) + 4;
+                totalArray = new byte[totalLength];
+            }
 
             Array.Copy(BitConverter.GetBytes(messages.Length), totalArray, 4);
             if (BitConverter.IsLittleEndian)
@@ -109,7 +113,7 @@ namespace Turbocharged.NSQ
             int messageLength, offsetIntoTotalArray = 4;
             for (int i = 0; i < messages.Length; i++)
             {
-                messageLength = messages[i].Length;
+                messageLength = ((byte[])messages[i]).Length;
                 Array.Copy(BitConverter.GetBytes(messageLength), 0, totalArray, offsetIntoTotalArray, 4);
                 if (BitConverter.IsLittleEndian)
                     Array.Reverse(totalArray, offsetIntoTotalArray, 4);

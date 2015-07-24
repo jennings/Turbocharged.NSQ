@@ -47,7 +47,7 @@ namespace TestClient
             StatusLabel.Text = "Done! (Idle)";
         }
 
-        IEnumerable<byte[]> GenerateMessages(int count)
+        IEnumerable<MessageBody> GenerateMessages(int count)
         {
             for (int i = 0; i < count; i++)
             {

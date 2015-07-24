@@ -87,7 +87,7 @@ namespace Turbocharged.NSQ
             }
         }
 
-        public async Task WriteAsync(byte[] buffer)
+        public async Task WriteAsync(MessageBody message)
         {
             while (true)
             {
@@ -103,6 +103,7 @@ namespace Turbocharged.NSQ
                 {
                     if (stream != null)
                     {
+                        byte[] buffer = message;
                         await stream.WriteAsync(buffer, 0, buffer.Length).ConfigureAwait(false);
                         return;
                     }

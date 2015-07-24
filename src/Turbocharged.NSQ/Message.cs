@@ -14,7 +14,7 @@ namespace Turbocharged.NSQ
         public string Id { get; private set; }
         public short Attempts { get; private set; }
         public long Timestamp { get; private set; }
-        public byte[] Data { get; private set; }
+        public MessageBody Body { get; private set; }
 
         readonly NsqTcpConnection _connection;
 
@@ -46,8 +46,8 @@ namespace Turbocharged.NSQ
             // Data
             const int DATA_OFFSET = 8 + 2 + 16;
             var dataLength = frame.Data.Length - DATA_OFFSET;
-            Data = new byte[dataLength];
-            Array.ConstrainedCopy(frame.Data, DATA_OFFSET, Data, 0, dataLength);
+            Body = new byte[dataLength];
+            Array.ConstrainedCopy(frame.Data, DATA_OFFSET, Body, 0, dataLength);
         }
 
         public Task FinishAsync()
