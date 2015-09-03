@@ -257,6 +257,12 @@ namespace Turbocharged.NSQ
                         }
                     }
                 }
+                catch (ObjectDisposedException ex)
+                {
+                    OnInternalMessage("Exiting worker loop due to disposal. Message = {0}", ex.Message);
+                    Connected = false;
+                    return;
+                }
                 catch (IOException ex)
                 {
                     OnInternalMessage("EXCEPTION: {0}", ex.Message);
