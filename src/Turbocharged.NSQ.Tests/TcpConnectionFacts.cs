@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Configuration;
+using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Text;
@@ -10,13 +11,12 @@ using Xunit;
 
 namespace Turbocharged.NSQ.Tests
 {
-    public class TcpConnectionFacts : IDisposable
+    public class TcpConnectionFacts
     {
         #region Setup
 
         DnsEndPoint endPoint;
         ConsumerOptions options;
-        NsqTcpConnection conn;
         NsqProducer prod;
 
         public TcpConnectionFacts()
@@ -24,11 +24,6 @@ namespace Turbocharged.NSQ.Tests
             endPoint = new DnsEndPoint(Settings.NsqdHostName, Settings.NsqdTcpPort);
             options = new ConsumerOptions();
             prod = new NsqProducer(Settings.NsqdHostName, Settings.NsqdHttpPort);
-        }
-
-        public void Dispose()
-        {
-            conn.Dispose();
         }
 
         Task EmptyChannelAsync(Topic topic, Channel channel)
@@ -39,11 +34,12 @@ namespace Turbocharged.NSQ.Tests
         #endregion
 
         [Fact]
-        public async Task ConnectionClosesProperly()
+        public void ConnectionClosesProperly()
         {
             options.Topic = "foo";
             options.Channel = "bar";
-            conn = NsqTcpConnection.Connect(endPoint, options, msg => msg.FinishAsync());
+            var conn = NsqTcpConnection.Connect(endPoint, options, msg => msg.FinishAsync());
+            conn.InternalMessages += (_, e) => Trace.WriteLine(e.Message);
             conn.Dispose();
         }
 
@@ -58,20 +54,25 @@ namespace Turbocharged.NSQ.Tests
 
             var tcs = new TaskCompletionSource<Message>();
             var task = tcs.Task;
-            conn = NsqTcpConnection.Connect(endPoint, options, async msg =>
+            var conn = NsqTcpConnection.Connect(endPoint, options, async msg =>
             {
                 await msg.FinishAsync();
                 tcs.TrySetResult(msg);
             });
-            await conn.SetMaxInFlightAsync(100);
-            await prod.PublishAsync(options.Topic, expectedData);
-            await Task.WhenAny(task, Task.Delay(1000));
+            conn.InternalMessages += (_, e) => Trace.WriteLine(e.Message);
 
-            Assert.Equal(TaskStatus.RanToCompletion, task.Status);
+            using (conn)
+            {
+                await conn.SetMaxInFlightAsync(100);
+                await prod.PublishAsync(options.Topic, expectedData);
+                await Task.WhenAny(task, Task.Delay(1000));
 
-            byte[] receivedData = task.Result.Body;
-            Assert.NotNull(receivedData);
-            Assert.True(expectedData.SequenceEqual(receivedData));
+                Assert.Equal(TaskStatus.RanToCompletion, task.Status);
+
+                byte[] receivedData = task.Result.Body;
+                Assert.NotNull(receivedData);
+                Assert.True(expectedData.SequenceEqual(receivedData));
+            }
         }
 
         [Fact]
@@ -82,17 +83,20 @@ namespace Turbocharged.NSQ.Tests
             await EmptyChannelAsync(options.Topic, options.Channel);
 
             int messagesReceived = 0;
-            conn = NsqTcpConnection.Connect(endPoint, options, async msg =>
+            var conn = NsqTcpConnection.Connect(endPoint, options, async msg =>
             {
                 await msg.FinishAsync().ConfigureAwait(false);
                 Interlocked.Increment(ref messagesReceived);
             });
+            conn.InternalMessages += (_, e) => Trace.WriteLine(e.Message);
 
-            await conn.SetMaxInFlightAsync(100);
-            var messages = Enumerable.Range(0, 1000).Select(i => (MessageBody)BitConverter.GetBytes(i)).ToArray();
-            await prod.PublishAsync(options.Topic, messages);
-            await Task.Delay(1000);
-            conn.Dispose();
+            using (conn)
+            {
+                await conn.SetMaxInFlightAsync(100);
+                var messages = Enumerable.Range(0, 1000).Select(i => (MessageBody)BitConverter.GetBytes(i)).ToArray();
+                await prod.PublishAsync(options.Topic, messages);
+                await Task.Delay(1000);
+            }
             Assert.InRange(messagesReceived, 500, int.MaxValue);
         }
     }

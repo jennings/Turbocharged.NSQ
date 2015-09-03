@@ -51,6 +51,7 @@
     <Compile Include="Commands\ICommand.cs" />
     <Compile Include="ConsumerOptions.cs" />
     <Compile Include="Commands\Identify.cs" />
+    <Compile Include="InternalMessageEventArgs.cs" />
     <Compile Include="Message.cs" />
     <Compile Include="FrameReader.cs" />
     <Compile Include="MessageBody.cs" />

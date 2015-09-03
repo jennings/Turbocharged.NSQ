@@ -26,9 +26,9 @@ namespace TestClient
             ReceivedMessages.DataSource = _messages;
         }
 
-        void _nsq_InternalMessages(string obj)
+        void _nsq_InternalMessages(object s, InternalMessageEventArgs e)
         {
-            PostMessage("INTERNAL: " + obj);
+            PostMessage("INTERNAL: " + e.Message);
         }
 
         void ConnectButton_Click(object sender, EventArgs e)

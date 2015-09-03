@@ -17,12 +17,11 @@ namespace Turbocharged.NSQ
         static readonly byte[] HEARTBEAT = Encoding.ASCII.GetBytes("_heartbeat_");
         static readonly byte[] MAGIC_V2 = Encoding.ASCII.GetBytes("  V2");
 
-        public event Action<string> InternalMessages = _ => { };
+        public EventHandler<InternalMessageEventArgs> InternalMessages;
 
         public bool Connected { get; private set; }
 
         readonly CancellationTokenSource _connectionClosedSource;
-        readonly CancellationToken _connectionClosedToken;
         readonly ConsumerOptions _options;
         readonly DnsEndPoint _endPoint;
         readonly HandlerFunc _messageHandler;
@@ -36,6 +35,23 @@ namespace Turbocharged.NSQ
         NetworkStream _stream;
         TaskCompletionSource<bool> _nextReconnectionTaskSource = new TaskCompletionSource<bool>();
 
+        internal void OnInternalMessage(string format, object arg0)
+        {
+            var handler = InternalMessages;
+            if (handler != null)
+            {
+                handler(this, new InternalMessageEventArgs(string.Format(format, arg0)));
+            }
+        }
+
+        internal void OnInternalMessage(string format, params object[] args)
+        {
+            var handler = InternalMessages;
+            if (handler != null)
+            {
+                handler(this, new InternalMessageEventArgs(string.Format(format, args)));
+            }
+        }
 
         internal NsqTcpConnection(DnsEndPoint endPoint, ConsumerOptions options, IBackoffStrategy backoffStrategy, HandlerFunc handler)
         {
@@ -45,7 +61,6 @@ namespace Turbocharged.NSQ
             _backoffStrategy = backoffStrategy;
 
             _connectionClosedSource = new CancellationTokenSource();
-            _connectionClosedToken = _connectionClosedSource.Token;
 
             _workerThread = new Thread(WorkerLoop);
             _workerThread.Name = "Turbocharged.NSQ Worker";
@@ -66,24 +81,24 @@ namespace Turbocharged.NSQ
             //   b. Handshaking
             //   c. Dispatching received messages to the thread pool
 
-            nsq.InternalMessages("Worker thread starting");
+            nsq.OnInternalMessage("Worker thread starting");
             nsq._workerThread.Start();
-            nsq.InternalMessages("Worker thread started");
+            nsq.OnInternalMessage("Worker thread started");
 
             return nsq;
         }
 
         object _disposeLock = new object();
+        bool _disposed = false;
 
         public void Dispose()
         {
             lock (_disposeLock)
             {
-                if (!_connectionClosedToken.IsCancellationRequested)
-                {
-                    _connectionClosedSource.Cancel();
-                    _connectionClosedSource.Dispose();
-                }
+                if (_disposed) return;
+                _disposed = true;
+                _connectionClosedSource.Cancel();
+                _connectionClosedSource.Dispose();
             }
         }
 
@@ -138,7 +153,7 @@ namespace Turbocharged.NSQ
             {
                 try
                 {
-                    if (_connectionClosedToken.IsCancellationRequested)
+                    if (_connectionClosedSource.IsCancellationRequested)
                     {
                         return;
                     }
@@ -159,13 +174,13 @@ namespace Turbocharged.NSQ
                                 TimeSpan delay;
                                 if (backoffLimiter.ShouldReconnect(out delay))
                                 {
-                                    InternalMessages("Delaying " + (int)delay.TotalMilliseconds + "ms before reconnecting");
+                                    OnInternalMessage("Delaying {0} ms before reconnecting", (int)delay.TotalMilliseconds);
                                     Thread.Sleep(delay);
                                 }
                                 else
                                 {
                                     // We give up
-                                    InternalMessages("Abandoning connection");
+                                    OnInternalMessage("Abandoning connection");
                                     Dispose();
                                     return;
                                 }
@@ -173,17 +188,25 @@ namespace Turbocharged.NSQ
 
                             lock (_connectionSwapInProgressLock)
                             {
-                                if (client != null)
+                                CancellationToken cancellationToken;
+                                lock (_disposeLock)
                                 {
-                                    cancellationRegistration.Dispose();
-                                    ((IDisposable)client).Dispose();
+                                    if (_disposed) return;
+
+                                    if (client != null)
+                                    {
+                                        cancellationRegistration.Dispose();
+                                        ((IDisposable)client).Dispose();
+                                    }
+
+                                    cancellationToken = _connectionClosedSource.Token;
                                 }
 
-                                InternalMessages("TCP client starting");
+                                OnInternalMessage("TCP client starting");
                                 client = new TcpClient(_endPoint.Host, _endPoint.Port);
-                                cancellationRegistration = _connectionClosedToken.Register(() => ((IDisposable)client).Dispose(), false);
+                                cancellationRegistration = cancellationToken.Register(() => ((IDisposable)client).Dispose(), false);
                                 Connected = true;
-                                InternalMessages("TCP client started");
+                                OnInternalMessage("TCP client started");
 
                                 _stream = client.GetStream();
                                 reader = new FrameReader(_stream);
@@ -207,42 +230,42 @@ namespace Turbocharged.NSQ
                         {
                             if (HEARTBEAT.SequenceEqual(frame.Data))
                             {
-                                InternalMessages("Heartbeat");
+                                OnInternalMessage("Heartbeat");
                                 SendCommandAsync(new Nop())
                                     .ContinueWith(t => Dispose(), TaskContinuationOptions.OnlyOnFaulted);
                             }
                             else
                             {
-                                InternalMessages("Received result. Length = " + frame.MessageSize);
+                                OnInternalMessage("Received result. Length = {0}", frame.MessageSize);
                             }
                         }
                         else if (frame.Type == FrameType.Message)
                         {
-                            InternalMessages("Received message. Length = " + frame.MessageSize);
+                            OnInternalMessage("Received message. Length = {0}", frame.MessageSize);
                             var message = new Message(frame, this);
                             // TODO: Rethink this
                             ThreadPool.QueueUserWorkItem(new WaitCallback(_ => { _messageHandler(message); }));
                         }
                         else if (frame.Type == FrameType.Error)
                         {
-                            InternalMessages("Received error. Length = " + frame.MessageSize);
+                            OnInternalMessage("Received error. Length = {0}", frame.MessageSize);
                         }
                         else
                         {
-                            InternalMessages("Unknown message type: " + frame.Type);
+                            OnInternalMessage("Unknown message type: {0}", frame.Type);
                             throw new InvalidOperationException("Unknown message type " + frame.Type);
                         }
                     }
                 }
                 catch (IOException ex)
                 {
-                    InternalMessages("EXCEPTION: " + ex.Message);
+                    OnInternalMessage("EXCEPTION: {0}", ex.Message);
                     Connected = false;
                     continue;
                 }
                 catch (SocketException ex)
                 {
-                    InternalMessages("EXCEPTION: " + ex.Message);
+                    OnInternalMessage("EXCEPTION: {0}", ex.Message);
                     Connected = false;
                     continue;
                 }
