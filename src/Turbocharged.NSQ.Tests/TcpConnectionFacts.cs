@@ -34,6 +34,16 @@ namespace Turbocharged.NSQ.Tests
         #endregion
 
         [Fact]
+        public void ConsumerFactoryReturnsNsqTcpConnectionWhenNsqdEndPointIsGiven()
+        {
+            options.NsqEndPoint = endPoint;
+            using (var conn = NsqConsumer.Connect(options, msg => msg.FinishAsync()))
+            {
+                Assert.IsType<NsqTcpConnection>(conn);
+            }
+        }
+
+        [Fact]
         public void ConnectionClosesProperly()
         {
             options.Topic = "foo";

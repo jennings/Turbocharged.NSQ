@@ -8,14 +8,13 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using HandlerFunc = System.Func<Turbocharged.NSQ.Message, System.Threading.Tasks.Task>;
 
 namespace Turbocharged.NSQ
 {
     /// <summary>
     /// Maintains a TCP connection to a single nsqd instance and allows consuming messages.
     /// </summary>
-    public sealed class NsqTcpConnection : IDisposable
+    public sealed class NsqTcpConnection : INsqConsumer, IDisposable
     {
         static readonly byte[] HEARTBEAT = Encoding.ASCII.GetBytes("_heartbeat_");
         static readonly byte[] MAGIC_V2 = Encoding.ASCII.GetBytes("  V2");
@@ -27,7 +26,7 @@ namespace Turbocharged.NSQ
         readonly CancellationTokenSource _connectionClosedSource;
         readonly ConsumerOptions _options;
         readonly DnsEndPoint _endPoint;
-        readonly HandlerFunc _messageHandler;
+        readonly MessageHandler _messageHandler;
         readonly IBackoffStrategy _backoffStrategy;
         readonly Thread _workerThread;
 
@@ -56,7 +55,7 @@ namespace Turbocharged.NSQ
             }
         }
 
-        internal NsqTcpConnection(DnsEndPoint endPoint, ConsumerOptions options, IBackoffStrategy backoffStrategy, HandlerFunc handler)
+        internal NsqTcpConnection(DnsEndPoint endPoint, ConsumerOptions options, IBackoffStrategy backoffStrategy, MessageHandler handler)
         {
             _endPoint = endPoint;
             _options = options;
@@ -76,13 +75,13 @@ namespace Turbocharged.NSQ
         /// <param name="options">Options for the connection.</param>
         /// <param name="handler">The delegate used to handle delivered messages.</param>
         /// <returns>A connected NSQ connection.</returns>
-        public static NsqTcpConnection Connect(DnsEndPoint endPoint, ConsumerOptions options, HandlerFunc handler)
+        public static NsqTcpConnection Connect(DnsEndPoint endPoint, ConsumerOptions options, MessageHandler handler)
         {
             var backoffStrategy = new ExponentialBackoffStrategy(TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(30));
             return Connect(endPoint, options, backoffStrategy, handler);
         }
 
-        internal static NsqTcpConnection Connect(DnsEndPoint endPoint, ConsumerOptions options, IBackoffStrategy backoffStrategy, HandlerFunc handler)
+        internal static NsqTcpConnection Connect(DnsEndPoint endPoint, ConsumerOptions options, IBackoffStrategy backoffStrategy, MessageHandler handler)
         {
             var nsq = new NsqTcpConnection(endPoint, options, backoffStrategy, handler);
 
