@@ -7,24 +7,20 @@ using System.Threading.Tasks;
 
 namespace Turbocharged.NSQ
 {
-    public enum ConnectionDiscoveryMode
-    {
-        Lookupd,
-        Nsqd,
-    }
-
     public class ConsumerOptions
     {
         /// <summary>
-        /// Parses a connection string of the form:
-        ///     "Lookupd=10.0.0.1:4160,10.0.0.2:4160"
-        /// or:
-        ///     "Nsqd=10.0.0.1:4150,10.0.0.2:4150"
+        /// EndPoints for nsqlookupd instances to use. If any are present,
+        /// this overrides the NsqEndPoint property.
         /// </summary>
+        public HashSet<DnsEndPoint> LookupEndPoints { get; private set; }
 
-        public ConnectionDiscoveryMode DiscoveryMode { get; set; }
-        public HashSet<DnsEndPoint> LookupdEndPoints { get; private set; }
-        public HashSet<DnsEndPoint> NsqdEndPoints { get; private set; }
+        /// <summary>
+        /// The EndPoint to a single nsqd service to use. If any Lookup endpoints
+        /// are present, this setting is ignored.
+        /// </summary>
+        public DnsEndPoint NsqEndPoint { get; set; }
+
         public Topic Topic { get; set; }
         public Channel Channel { get; set; }
         public string ClientId { get; set; }
@@ -33,74 +29,114 @@ namespace Turbocharged.NSQ
         public TimeSpan ReconnectionDelay { get; set; }
         public TimeSpan ReconnectionMaxDelay { get; set; }
 
+        const string LOOKUPD_KEY = "lookupd";
+        const string NSQD_KEY = "nsqd";
+        const string TOPIC_KEY = "topic";
+        const string CHANNEL_KEY = "channel";
+        const string CLIENTID_KEY = "clientid";
+        const string HOSTNAME_KEY = "hostname";
+        const string MAXINFLIGHT_KEY = "maxinflight";
+        const string RECONNECTIONDELAY_KEY = "reconnectiondelay";
+        const string RECONNECTIONMAXDELAY_KEY = "reconnectionmaxdelay";
+
+        const int DEFAULT_LOOKUPD_HTTP_PORT = 4061;
+        const int DEFAULT_NSQD_TCP_PORT = 4050;
+
         public ConsumerOptions()
         {
+            LookupEndPoints = new HashSet<DnsEndPoint>();
+
             ClientId = "Turbocharged.NSQ";
             HostName = Environment.MachineName;
             MaxInFlight = 2500;
             ReconnectionDelay = TimeSpan.FromSeconds(1);
             ReconnectionMaxDelay = TimeSpan.FromSeconds(30);
-            LookupdEndPoints = new HashSet<DnsEndPoint>();
-            NsqdEndPoints = new HashSet<DnsEndPoint>();
         }
 
         public static ConsumerOptions Parse(string connectionString)
         {
-            var parts =
-                connectionString.Split(new[] { ";" }, StringSplitOptions.RemoveEmptyEntries)
-                .Select(part => part.Split(new[] { "=" }, StringSplitOptions.RemoveEmptyEntries))
-                .Where(part => part.Length == 2)
-                .ToDictionary(
-                    part => part[0].ToLowerInvariant().Trim(),
-                    part => part[1].Trim());
-
-            if (!parts.ContainsKey("lookupd") && !parts.ContainsKey("nsqd"))
-                throw new ArgumentException("Must provide either Lookupd or Nsqd endpoints in the connection string");
-
-            if (parts.ContainsKey("lookupd") && parts.ContainsKey("nsqd"))
-                throw new ArgumentException("Cannot provide both Lookupd and Nsqd endpoints in a connection string");
-
             var options = new ConsumerOptions();
+            var parts = ParseIntoSegments(connectionString);
 
-            if (parts.ContainsKey("lookupd"))
+            var sb = new StringBuilder();
+
+            if (parts.Contains(LOOKUPD_KEY))
             {
-                options.DiscoveryMode = ConnectionDiscoveryMode.Lookupd;
-                foreach (var endpoint in ParseEndPoints(parts["lookupd"], 4161))
+                foreach (var endPoint in ParseEndPoints(parts[LOOKUPD_KEY], DEFAULT_LOOKUPD_HTTP_PORT))
                 {
-                    options.LookupdEndPoints.Add(endpoint);
+                    options.LookupEndPoints.Add(endPoint);
                 }
+
+            }
+            else if (parts.Contains(NSQD_KEY))
+            {
+                options.NsqEndPoint = ParseEndPoints(parts[NSQD_KEY], DEFAULT_NSQD_TCP_PORT).Last();
             }
             else
             {
-                options.DiscoveryMode = ConnectionDiscoveryMode.Nsqd;
-                foreach (var endpoint in ParseEndPoints(parts["nsqd"], 4150))
-                {
-                    options.NsqdEndPoints.Add(endpoint);
-                }
+                throw new ArgumentException("Must provide either nsqlookupd or nsqd endpoints");
             }
 
-            if (parts.ContainsKey("clientid"))
-                options.ClientId = parts["clientid"];
+            if (parts.Contains(CLIENTID_KEY))
+            {
+                options.ClientId = parts[CLIENTID_KEY].Last();
+            }
 
-            if (parts.ContainsKey("hostname"))
-                options.ClientId = parts["hostname"];
+            if (parts.Contains(HOSTNAME_KEY))
+            {
+                options.HostName = parts[HOSTNAME_KEY].Last();
+            }
 
-            if (parts.ContainsKey("maxinflight"))
-                options.MaxInFlight = int.Parse(parts["maxinflight"]);
+            if (parts.Contains(MAXINFLIGHT_KEY))
+            {
+                options.MaxInFlight = int.Parse(parts[MAXINFLIGHT_KEY].Last());
+            }
 
-            if (parts.ContainsKey("topic"))
-                options.Topic = parts["topic"];
+            if (parts.Contains(TOPIC_KEY))
+            {
+                options.Topic = parts[TOPIC_KEY].Last();
+            }
 
-            if (parts.ContainsKey("channel"))
-                options.Channel = parts["channel"];
+            if (parts.Contains(CHANNEL_KEY))
+            {
+                options.Channel = parts[CHANNEL_KEY].Last();
+            }
+
+            if (parts.Contains(RECONNECTIONDELAY_KEY))
+            {
+                options.ReconnectionDelay = TimeSpan.FromSeconds(int.Parse(parts[RECONNECTIONDELAY_KEY].Last()));
+            }
+
+            if (parts.Contains(RECONNECTIONMAXDELAY_KEY))
+            {
+                options.ReconnectionMaxDelay = TimeSpan.FromSeconds(int.Parse(parts[RECONNECTIONMAXDELAY_KEY].Last()));
+            }
 
             return options;
         }
 
-        static IEnumerable<DnsEndPoint> ParseEndPoints(string list, int defaultPort)
+        static ILookup<string, string> ParseIntoSegments(string connectionString)
         {
             return
-                list.Split(new[] { "," }, StringSplitOptions.RemoveEmptyEntries)
+                connectionString.Split(new[] { ";" }, StringSplitOptions.RemoveEmptyEntries)
+                .Select(part => part.Split(new[] { "=" }, StringSplitOptions.RemoveEmptyEntries))
+                .Where(part => part.Length == 1 || part.Length == 2)
+                .Select(part =>
+                {
+                    if (part.Length == 2)
+                        return part;
+                    else
+                        return new[] { LOOKUPD_KEY, part[0] };
+                })
+                .ToLookup(
+                    part => part[0].ToLowerInvariant().Trim(),
+                    part => part[1].Trim());
+
+        }
+
+        static IEnumerable<DnsEndPoint> ParseEndPoints(IEnumerable<string> list, int defaultPort)
+        {
+            return list
                 .Select(endpoint => endpoint.Trim())
                 .Select(endpoint => endpoint.Split(new[] { ':' }, 2))
                 .Select(endpointParts => new DnsEndPoint(endpointParts[0], endpointParts.Length == 2 ? int.Parse(endpointParts[1]) : defaultPort));
