@@ -18,6 +18,14 @@ namespace Turbocharged.NSQ
 
         readonly NsqTcpConnection _connection;
 
+        const int TIMESTAMP_START = 0;
+        const int TIMESTAMP_COUNT = 8;
+        const int ATTEMPTS_START = 8;
+        const int ATTEMPTS_COUNT = 2;
+        const int ID_START = 10;
+        const int ID_COUNT = 16;
+        const int DATA_START = TIMESTAMP_COUNT + ATTEMPTS_COUNT + ID_COUNT;
+
         internal Message(Frame frame, NsqTcpConnection connection)
         {
             _connection = connection;
@@ -25,29 +33,20 @@ namespace Turbocharged.NSQ
             if (frame.Type != FrameType.Message)
                 throw new ArgumentException("Frame must have FrameType 'Message'", "frame");
 
-            byte[] timestampBuffer = new byte[8];
-            byte[] attemptsBuffer = new byte[2];
-            byte[] idBuffer = new byte[16];
-
-            Array.ConstrainedCopy(frame.Data, 0, timestampBuffer, 0, 8);
-            Array.ConstrainedCopy(frame.Data, 8, attemptsBuffer, 0, 2);
-            Array.ConstrainedCopy(frame.Data, 10, idBuffer, 0, 16);
-
             if (BitConverter.IsLittleEndian)
             {
-                Array.Reverse(timestampBuffer);
-                Array.Reverse(attemptsBuffer);
+                Array.Reverse(frame.Data, TIMESTAMP_START, TIMESTAMP_COUNT);
+                Array.Reverse(frame.Data, ATTEMPTS_START, ATTEMPTS_COUNT);
             }
 
-            Timestamp = BitConverter.ToInt64(timestampBuffer, 0);
-            Attempts = BitConverter.ToInt16(attemptsBuffer, 0);
-            Id = Encoding.ASCII.GetString(idBuffer);
+            Timestamp = BitConverter.ToInt64(frame.Data, TIMESTAMP_START);
+            Attempts = BitConverter.ToInt16(frame.Data, ATTEMPTS_START);
+            Id = Encoding.ASCII.GetString(frame.Data, ID_START, ID_COUNT);
 
             // Data
-            const int DATA_OFFSET = 8 + 2 + 16;
-            var dataLength = frame.Data.Length - DATA_OFFSET;
+            var dataLength = frame.Data.Length - DATA_START;
             Body = new byte[dataLength];
-            Array.ConstrainedCopy(frame.Data, DATA_OFFSET, Body, 0, dataLength);
+            Array.ConstrainedCopy(frame.Data, DATA_START, Body, 0, dataLength);
         }
 
         public Task FinishAsync()
