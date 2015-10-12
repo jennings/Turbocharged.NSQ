@@ -10,29 +10,30 @@ namespace Turbocharged.NSQ
     /// A topic name in NSQ. Topics should represent a type of message,
     /// for example, "new-users" or "order-updated".
     /// </summary>
-    public class Topic
+    public struct Topic
     {
-        readonly string _topic;
+        public string Name { get; private set; }
 
         public Topic(string topic)
+            : this()
         {
             if (topic == null) throw new ArgumentNullException("topic");
-            _topic = topic;
+            Name = topic;
         }
 
         public override string ToString()
         {
-            return _topic;
+            return Name;
         }
 
         internal byte[] ToUTF8()
         {
-            return Encoding.UTF8.GetBytes(_topic);
+            return Encoding.UTF8.GetBytes(Name);
         }
 
         public static implicit operator string(Topic topic)
         {
-            return topic._topic;
+            return topic.Name;
         }
 
         public static implicit operator Topic(string topic)
@@ -45,29 +46,30 @@ namespace Turbocharged.NSQ
     /// A channel name in NSQ. Channels should represent the action of a consumer,
     /// for example, "send_email" or "create_database_record".
     /// </summary>
-    public class Channel
+    public struct Channel
     {
-        readonly string _channel;
+        public string Name { get; private set; }
 
         public Channel(string channel)
+            : this()
         {
             if (channel == null) throw new ArgumentNullException("channel");
-            _channel = channel;
+            Name = channel;
         }
 
         public override string ToString()
         {
-            return _channel;
+            return Name;
         }
 
         internal byte[] ToUTF8()
         {
-            return Encoding.UTF8.GetBytes(_channel);
+            return Encoding.UTF8.GetBytes(Name);
         }
 
         public static implicit operator string(Channel channel)
         {
-            return channel._channel;
+            return channel.Name;
         }
 
         public static implicit operator Channel(string channel)
