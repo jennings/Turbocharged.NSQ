@@ -44,6 +44,12 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="LookupConsumerForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="LookupConsumerForm.Designer.cs">
+      <DependentUpon>LookupConsumerForm.cs</DependentUpon>
+    </Compile>
     <Compile Include="ConsumerForm.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -70,6 +76,9 @@
     </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <EmbeddedResource Include="LookupConsumerForm.resx">
+      <DependentUpon>LookupConsumerForm.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="ConsumerForm.resx">
       <DependentUpon>ConsumerForm.cs</DependentUpon>
     </EmbeddedResource>

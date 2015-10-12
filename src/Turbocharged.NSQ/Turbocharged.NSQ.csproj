@@ -48,10 +48,12 @@
     <Compile Include="BackoffStrategies.cs" />
     <Compile Include="Commands\ByteArrays.cs" />
     <Compile Include="Commands\Finish.cs" />
+    <Compile Include="CommunicationException.cs" />
     <Compile Include="Frame.cs" />
     <Compile Include="Commands\ICommand.cs" />
     <Compile Include="ConsumerOptions.cs" />
     <Compile Include="Commands\Identify.cs" />
+    <Compile Include="DiscoveryEventArgs.cs" />
     <Compile Include="InternalMessageEventArgs.cs" />
     <Compile Include="Message.cs" />
     <Compile Include="FrameReader.cs" />
@@ -62,6 +64,7 @@
     <Compile Include="Commands\Nop.cs" />
     <Compile Include="Commands\Ready.cs" />
     <Compile Include="Commands\Subscribe.cs" />
+    <Compile Include="NsqLookupConsumer.cs" />
     <Compile Include="NsqProducer.cs" />
     <Compile Include="NsqStatistics.cs" />
     <Compile Include="System\Disposable.cs" />

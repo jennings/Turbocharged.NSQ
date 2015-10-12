@@ -45,6 +45,8 @@ namespace Turbocharged.NSQ
         /// </summary>
         public string HostName { get; set; }
 
+        public TimeSpan LookupPeriod { get; set; }
+
         /// <summary>
         /// The maximum number of messages allowed to be in-flight to this consumer. When
         /// connected to several NSQ instances, this number is distributed across the connected
@@ -71,6 +73,7 @@ namespace Turbocharged.NSQ
         const string CHANNEL_KEY = "channel";
         const string CLIENTID_KEY = "clientid";
         const string HOSTNAME_KEY = "hostname";
+        const string LOOKUPPERIOD_KEY = "lookupperiod";
         const string MAXINFLIGHT_KEY = "maxinflight";
         const string RECONNECTIONDELAY_KEY = "reconnectiondelay";
         const string RECONNECTIONMAXDELAY_KEY = "reconnectionmaxdelay";
@@ -87,6 +90,7 @@ namespace Turbocharged.NSQ
 
             ClientId = "Turbocharged.NSQ";
             HostName = Environment.MachineName;
+            LookupPeriod = TimeSpan.FromSeconds(15);
             MaxInFlight = 2500;
             ReconnectionDelay = TimeSpan.FromSeconds(1);
             ReconnectionMaxDelay = TimeSpan.FromSeconds(30);
@@ -129,6 +133,11 @@ namespace Turbocharged.NSQ
             if (parts.Contains(HOSTNAME_KEY))
             {
                 options.HostName = parts[HOSTNAME_KEY].Last();
+            }
+
+            if (parts.Contains(LOOKUPPERIOD_KEY))
+            {
+                options.LookupPeriod = TimeSpan.FromSeconds(int.Parse(parts[LOOKUPPERIOD_KEY].Last()));
             }
 
             if (parts.Contains(MAXINFLIGHT_KEY))

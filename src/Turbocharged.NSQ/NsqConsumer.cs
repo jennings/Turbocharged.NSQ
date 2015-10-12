@@ -21,15 +21,32 @@ namespace Turbocharged.NSQ
             return Connect(ConsumerOptions.Parse(connectionString), handler);
         }
 
+        public static Task<INsqConsumer> ConnectAndWaitAsync(string connectionString, MessageHandler handler)
+        {
+            return ConnectAndWaitAsync(ConsumerOptions.Parse(connectionString), handler);
+        }
+
         public static INsqConsumer Connect(ConsumerOptions options, MessageHandler handler)
         {
             if (options.LookupEndPoints.Any())
             {
-                throw new NotImplementedException();
+                return NsqLookupConsumer.Connect(options, handler);
             }
             else
             {
                 return NsqTcpConnection.Connect(options.NsqEndPoint, options, handler);
+            }
+        }
+
+        public static async Task<INsqConsumer> ConnectAndWaitAsync(ConsumerOptions options, MessageHandler handler)
+        {
+            if (options.LookupEndPoints.Any())
+            {
+                return await NsqLookupConsumer.ConnectAndWaitAsync(options, handler).ConfigureAwait(false);
+            }
+            else
+            {
+                return await NsqTcpConnection.ConnectAndWaitAsync(options.NsqEndPoint, options, handler).ConfigureAwait(false);
             }
         }
     }
