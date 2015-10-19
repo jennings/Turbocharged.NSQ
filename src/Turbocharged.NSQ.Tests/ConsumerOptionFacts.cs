@@ -25,12 +25,11 @@ namespace Turbocharged.NSQ.Tests
         [Fact]
         public void ParsingGetsAllFields()
         {
-            var connectionString = "foo:123; channel=abc; clientId=def; hostname=ghi; maxInFlight=123; reconnectionDelay=55; reconnectionMaxDelay=66; topic=foobar";
+            var connectionString = "foo:123; channel=abc; clientId=def; hostname=ghi; reconnectionDelay=55; reconnectionMaxDelay=66; topic=foobar";
             var options = ConsumerOptions.Parse(connectionString);
             Assert.Equal("abc", options.Channel);
             Assert.Equal("def", options.ClientId);
             Assert.Equal("ghi", options.HostName);
-            Assert.Equal(123, options.MaxInFlight);
             Assert.Equal(TimeSpan.FromSeconds(55), options.ReconnectionDelay);
             Assert.Equal(TimeSpan.FromSeconds(66), options.ReconnectionMaxDelay);
             Assert.Equal("foobar", options.Topic);
