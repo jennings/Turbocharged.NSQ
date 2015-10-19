@@ -6,6 +6,9 @@ using System.Threading.Tasks;
 
 namespace Turbocharged.NSQ
 {
+    /// <summary>
+    /// The address of an nsqlookupd instance.
+    /// </summary>
     public class LookupAddress
     {
         public string HostName { get; set; }
@@ -17,6 +20,9 @@ namespace Turbocharged.NSQ
         }
     }
 
+    /// <summary>
+    /// The address of an nsqd instance.
+    /// </summary>
     public class NsqAddress
     {
         public string BroadcastAddress { get; set; }

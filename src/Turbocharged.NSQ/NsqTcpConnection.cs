@@ -12,6 +12,9 @@ using HandlerFunc = System.Func<Turbocharged.NSQ.Message, System.Threading.Tasks
 
 namespace Turbocharged.NSQ
 {
+    /// <summary>
+    /// Maintains a TCP connection to a single nsqd instance and allows consuming messages.
+    /// </summary>
     public sealed class NsqTcpConnection : IDisposable
     {
         static readonly byte[] HEARTBEAT = Encoding.ASCII.GetBytes("_heartbeat_");
@@ -66,6 +69,13 @@ namespace Turbocharged.NSQ
             _workerThread.Name = "Turbocharged.NSQ Worker";
         }
 
+        /// <summary>
+        /// Creates a new instance and connects to an nsqd instance.
+        /// </summary>
+        /// <param name="endPoint">The address of the nsqd instance.</param>
+        /// <param name="options">Options for the connection.</param>
+        /// <param name="handler">The delegate used to handle delivered messages.</param>
+        /// <returns>A connected NSQ connection.</returns>
         public static NsqTcpConnection Connect(DnsEndPoint endPoint, ConsumerOptions options, HandlerFunc handler)
         {
             var backoffStrategy = new ExponentialBackoffStrategy(TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(30));
@@ -102,6 +112,9 @@ namespace Turbocharged.NSQ
             }
         }
 
+        /// <summary>
+        /// Publishes a message to NSQ.
+        /// </summary>
         public async Task WriteAsync(MessageBody message)
         {
             while (true)
@@ -136,6 +149,9 @@ namespace Turbocharged.NSQ
             }
         }
 
+        /// <summary>
+        /// Sets the maximum number of messages which may be in-flight at once.
+        /// </summary>
         public Task SetMaxInFlightAsync(int maxInFlight)
         {
             return SendCommandAsync(new Ready(maxInFlight));

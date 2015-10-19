@@ -7,6 +7,9 @@ using System.Threading.Tasks;
 
 namespace Turbocharged.NSQ
 {
+    /// <summary>
+    /// Configures the behavior of an NSQ consumer connection.
+    /// </summary>
     public class ConsumerOptions
     {
         /// <summary>
@@ -21,12 +24,45 @@ namespace Turbocharged.NSQ
         /// </summary>
         public DnsEndPoint NsqEndPoint { get; set; }
 
+        /// <summary>
+        /// The topic to which to subscribe.
+        /// </summary>
         public Topic Topic { get; set; }
+
+        /// <summary>
+        /// The channel to which to subscribe.
+        /// </summary>
         public Channel Channel { get; set; }
+
+
+        /// <summary>
+        /// An identifier for this particular consumer.
+        /// </summary>
         public string ClientId { get; set; }
+
+        /// <summary>
+        /// The hostname of the computer connected to NSQ.
+        /// </summary>
         public string HostName { get; set; }
+
+        /// <summary>
+        /// The maximum number of messages allowed to be in-flight to this consumer. When
+        /// connected to several NSQ instances, this number is distributed across the connected
+        /// clients evenly.
+        /// </summary>
         public int MaxInFlight { get; set; }
+
+        /// <summary>
+        /// The initial delay before attempting reconnection if the connection to NSQ fails.
+        /// By default, the delay will be doubled on each attempt until reconnection, up to
+        /// a maximum of <c>ReconnectionMaxDelay</c>.
+        /// </summary>
         public TimeSpan ReconnectionDelay { get; set; }
+
+
+        /// <summary>
+        /// The maximum delay between reconnection attempts.
+        /// </summary>
         public TimeSpan ReconnectionMaxDelay { get; set; }
 
         const string LOOKUPD_KEY = "lookupd";
@@ -42,6 +78,9 @@ namespace Turbocharged.NSQ
         const int DEFAULT_LOOKUPD_HTTP_PORT = 4061;
         const int DEFAULT_NSQD_TCP_PORT = 4050;
 
+        /// <summary>
+        /// Creates a default set of options.
+        /// </summary>
         public ConsumerOptions()
         {
             LookupEndPoints = new HashSet<DnsEndPoint>();
@@ -53,6 +92,11 @@ namespace Turbocharged.NSQ
             ReconnectionMaxDelay = TimeSpan.FromSeconds(30);
         }
 
+        /// <summary>
+        /// Parses a connection string into a <c>ConsumerOptions</c> instance.
+        /// </summary>
+        /// <param name="connectionString">A semicolon-delimited list of key=value pairs of connection options.</param>
+        /// <returns></returns>
         public static ConsumerOptions Parse(string connectionString)
         {
             var options = new ConsumerOptions();

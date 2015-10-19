@@ -11,11 +11,19 @@ using Newtonsoft.Json.Linq;
 
 namespace Turbocharged.NSQ
 {
+    /// <summary>
+    /// A client for querying an instance of nsqlookupd.
+    /// </summary>
     public class NsqLookup
     {
         readonly WebClient _webClient = new WebClient();
         readonly SemaphoreSlim _webClientLock = new SemaphoreSlim(1, 1);
 
+        /// <summary>
+        /// Creates a new instance of <c>NsqLookup</c>.
+        /// </summary>
+        /// <param name="host">The host name or IP address of the nsqlookupd instance.</param>
+        /// <param name="port">The HTTP port of the nsqlookupd instance.</param>
         public NsqLookup(string host, int port)
         {
             _webClient.BaseAddress = new UriBuilder()
@@ -26,6 +34,9 @@ namespace Turbocharged.NSQ
             }.ToString();
         }
 
+        /// <summary>
+        /// Looks up the nsqd instances which are producing a topic.
+        /// </summary>
         public Task<List<NsqAddress>> LookupAsync(Topic topic)
         {
             return RequestListAsync("/lookup?topic=" + topic, response =>
@@ -43,6 +54,9 @@ namespace Turbocharged.NSQ
             });
         }
 
+        /// <summary>
+        /// Queries the list of topics known to this nsqlookupd instance.
+        /// </summary>
         public Task<List<Topic>> TopicsAsync()
         {
             return RequestListAsync("/topics", response =>
@@ -53,6 +67,10 @@ namespace Turbocharged.NSQ
             });
         }
 
+        /// <summary>
+        /// Queries the channels known to this nsqlookupd instance.
+        /// </summary>
+        /// <param name="topic">The topic to query.</param>
         public Task<List<Channel>> ChannelsAsync(Topic topic)
         {
             return RequestListAsync("/channels?topic=" + topic, response =>
@@ -63,6 +81,9 @@ namespace Turbocharged.NSQ
             });
         }
 
+        /// <summary>
+        /// Queries the nsqd nodes known to this nsqlookupd instance.
+        /// </summary>
         public Task<List<NsqAddress>> NodesAsync()
         {
             return RequestListAsync("/nodes", response =>
@@ -80,23 +101,35 @@ namespace Turbocharged.NSQ
             });
         }
 
+        /// <summary>
+        /// Deletes a topic.
+        /// </summary>
         public Task DeleteTopicAsync(Topic topic)
         {
             return RequestAsync("/delete_topic?topic=" + topic, _ => true);
         }
 
+        /// <summary>
+        /// Deletes a channel.
+        /// </summary>
         public Task DeleteChannelAsync(Topic topic, Channel channel)
         {
             var url = "/delete_channel?topic=" + topic + "&channel=" + channel;
             return RequestAsync(url, _ => true);
         }
 
+        /// <summary>
+        /// Tombstones a topic for an nsqd instance.
+        /// </summary>
         public Task TombstoneTopicProducerAsync(Topic topic, NsqAddress producer)
         {
             var url = string.Format("/tombstone_topic_producer?topic={0}&node={1}:{2}", topic, producer.BroadcastAddress, producer.HttpPort);
             return RequestAsync(url, _ => true);
         }
 
+        /// <summary>
+        /// Queries the version of the nsqlookupd instance.
+        /// </summary>
         public Task<Version> VersionAsync()
         {
             return RequestAsync("/info", response =>
@@ -106,6 +139,10 @@ namespace Turbocharged.NSQ
             });
         }
 
+        /// <summary>
+        /// Queries the nsqlookupd instance for liveliness.
+        /// </summary>
+        /// <returns>True if nsqlookupd returns "OK".</returns>
         public Task<bool> PingAsync()
         {
             return RequestAsync("/ping", response =>

@@ -6,9 +6,14 @@ using System.Threading.Tasks;
 
 namespace Turbocharged.NSQ
 {
+    /// <summary>
+    /// A topic name in NSQ. Topics should represent a type of message,
+    /// for example, "new-users" or "order-updated".
+    /// </summary>
     public class Topic
     {
         readonly string _topic;
+
         public Topic(string topic)
         {
             if (topic == null) throw new ArgumentNullException("topic");
@@ -20,7 +25,7 @@ namespace Turbocharged.NSQ
             return _topic;
         }
 
-        public byte[] ToUTF8()
+        internal byte[] ToUTF8()
         {
             return Encoding.UTF8.GetBytes(_topic);
         }
@@ -36,9 +41,14 @@ namespace Turbocharged.NSQ
         }
     }
 
+    /// <summary>
+    /// A channel name in NSQ. Channels should represent the action of a consumer,
+    /// for example, "send_email" or "create_database_record".
+    /// </summary>
     public class Channel
     {
         readonly string _channel;
+
         public Channel(string channel)
         {
             if (channel == null) throw new ArgumentNullException("channel");
@@ -50,7 +60,7 @@ namespace Turbocharged.NSQ
             return _channel;
         }
 
-        public byte[] ToUTF8()
+        internal byte[] ToUTF8()
         {
             return Encoding.UTF8.GetBytes(_channel);
         }
