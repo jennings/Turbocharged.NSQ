@@ -17,6 +17,7 @@ namespace Turbocharged.NSQ
         readonly Task _firstConnectionTask;
 
         bool firstDiscoveryCycle = true;
+        int _maxInFlight = 0;
 
         // No need to ever reconnect, we'll reconnect on the next lookup cycle
         static readonly NoRetryBackoffStrategy _noRetryBackoff = new NoRetryBackoffStrategy();
@@ -188,6 +189,7 @@ namespace Turbocharged.NSQ
 
         public async Task SetMaxInFlightAsync(int maxInFlight)
         {
+            _maxInFlight = maxInFlight;
             await _firstConnectionTask.ConfigureAwait(false);
 
             List<NsqTcpConnection> connections;
@@ -195,6 +197,8 @@ namespace Turbocharged.NSQ
             {
                 connections = _connections.Values.ToList();
             }
+
+            if (connections.Count == 0) return;
 
             int maxInFlightPerServer = maxInFlight / connections.Count;
             int leftover = maxInFlight - (maxInFlightPerServer * connections.Count);
@@ -204,6 +208,14 @@ namespace Turbocharged.NSQ
             {
                 int max = maxInFlightPerServer;
                 if (leftover > 0) max += leftover--;
+                var setMaxTask = connection.SetMaxInFlightAsync(max)
+                    .ContinueWith(t =>
+                    {
+                        if (t.Status == TaskStatus.Faulted)
+                        {
+                            OnInternalMessage("Setting MaxInFlight on {0} threw: {1}", connection._endPoint, t.Exception.GetBaseException().Message);
+                        }
+                    });
                 tasks.Add(connection.SetMaxInFlightAsync(max));
             }
 

@@ -25,7 +25,7 @@ namespace Turbocharged.NSQ
 
         readonly CancellationTokenSource _connectionClosedSource;
         readonly ConsumerOptions _options;
-        readonly DnsEndPoint _endPoint;
+        readonly internal DnsEndPoint _endPoint;
         readonly MessageHandler _messageHandler;
         readonly IBackoffStrategy _backoffStrategy;
         readonly Thread _workerThread;
