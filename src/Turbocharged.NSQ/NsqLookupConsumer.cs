@@ -111,8 +111,8 @@ namespace Turbocharged.NSQ
                     .ToList();
 
                 var currentEndPoints = _connections.Keys;
-                var newEndPoints = servers.Except(currentEndPoints);
-                var removedEndPoints = currentEndPoints.Except(servers);
+                var newEndPoints = servers.Except(currentEndPoints).ToList();
+                var removedEndPoints = currentEndPoints.Except(servers).ToList();
 
                 foreach (var endPoint in removedEndPoints)
                 {
