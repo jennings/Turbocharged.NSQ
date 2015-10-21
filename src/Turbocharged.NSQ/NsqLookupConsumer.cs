@@ -16,7 +16,7 @@ namespace Turbocharged.NSQ
         readonly MessageHandler _handler;
         readonly Task _firstConnectionTask;
 
-        bool firstDiscoveryCycle = true;
+        bool _firstDiscoveryCycle = true;
         int _maxInFlight = 0;
 
         // No need to ever reconnect, we'll reconnect on the next lookup cycle
@@ -148,10 +148,10 @@ namespace Turbocharged.NSQ
 
                 OnDiscoveryCompleted(nsqAddresses.ToList());
 
-                if (firstDiscoveryCycle)
+                if (_firstDiscoveryCycle)
                 {
                     firstConnectionTcs.TrySetResult(true);
-                    firstDiscoveryCycle = false;
+                    _firstDiscoveryCycle = false;
                 }
             }
 
