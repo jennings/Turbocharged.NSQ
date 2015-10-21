@@ -34,6 +34,26 @@ namespace Turbocharged.NSQ.Tests
         #endregion
 
         [Fact]
+        public async Task ConnectAndWaitIsConnectedImmediatelyAfter()
+        {
+            options.Topic = "foo";
+            options.Channel = "bar";
+            var tcs = new TaskCompletionSource<bool>();
+            using (var conn = await NsqTcpConnection.ConnectAndWaitAsync(endPoint, options, msg => { tcs.TrySetResult(true); return msg.FinishAsync(); }))
+            {
+                Assert.True(conn.Connected);
+
+                // Just for kicks, verify we're working
+                await Task.WhenAll(
+                    prod.PublishAsync(options.Topic, new byte[] { 1, 2, 3, 4 }),
+                    conn.SetMaxInFlightAsync(10));
+                var task = tcs.Task;
+                var done = await Task.WhenAny(task, Task.Delay(1000));
+                Assert.Same(done, task);
+            }
+        }
+
+        [Fact]
         public void ConsumerFactoryReturnsNsqTcpConnectionWhenNsqdEndPointIsGiven()
         {
             options.NsqEndPoint = endPoint;

@@ -29,6 +29,7 @@ namespace Turbocharged.NSQ
         readonly MessageHandler _messageHandler;
         readonly IBackoffStrategy _backoffStrategy;
         readonly Thread _workerThread;
+        readonly TaskCompletionSource<bool> _firstConnection = new TaskCompletionSource<bool>();
 
         readonly object _connectionSwapLock = new object();
         readonly object _connectionSwapInProgressLock = new object();
@@ -66,6 +67,13 @@ namespace Turbocharged.NSQ
 
             _workerThread = new Thread(WorkerLoop);
             _workerThread.Name = "Turbocharged.NSQ Worker";
+        }
+
+        public static async Task<NsqTcpConnection> ConnectAndWaitAsync(DnsEndPoint endPoint, ConsumerOptions options, MessageHandler handler)
+        {
+            var connection = Connect(endPoint, options, handler);
+            await connection._firstConnection.Task.ConfigureAwait(false);
+            return connection;
         }
 
         /// <summary>
@@ -228,6 +236,7 @@ namespace Turbocharged.NSQ
 
                                 Handshake(_stream, reader);
 
+                                _firstConnection.TrySetResult(true);
 
                                 // Start a new backoff cycle next time we disconnect
                                 backoffLimiter = null;
