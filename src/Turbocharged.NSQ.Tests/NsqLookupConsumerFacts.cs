@@ -31,13 +31,15 @@ namespace Turbocharged.NSQ.Tests
             options.Topic = "foo";
             options.Channel = "bar";
             var tcs = new TaskCompletionSource<bool>();
-            using (var consumer = await NsqLookupConsumer.ConnectAndWaitAsync(options, msg =>
-            {
-                tcs.TrySetResult(true);
-                return msg.FinishAsync();
-            }))
+            using (var consumer = new NsqLookupConsumer(options))
             {
                 consumer.InternalMessages += OutputMessage;
+                await consumer.ConnectAndWaitAsync(msg =>
+                {
+                    tcs.TrySetResult(true);
+                    return msg.FinishAsync();
+                });
+
                 await Task.WhenAll(
                     consumer.SetMaxInFlightAsync(100),
                     consumer.WriteAsync("hello"));

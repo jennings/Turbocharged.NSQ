@@ -26,7 +26,6 @@ namespace Turbocharged.NSQ
         readonly CancellationTokenSource _connectionClosedSource;
         readonly ConsumerOptions _options;
         readonly internal DnsEndPoint _endPoint;
-        readonly MessageHandler _messageHandler;
         readonly IBackoffStrategy _backoffStrategy;
         readonly Thread _workerThread;
         readonly TaskCompletionSource<bool> _firstConnection = new TaskCompletionSource<bool>();
@@ -37,6 +36,9 @@ namespace Turbocharged.NSQ
         IdentifyResponse _identifyResponse;
         NetworkStream _stream;
         TaskCompletionSource<bool> _nextReconnectionTaskSource = new TaskCompletionSource<bool>();
+        int _started = 0;
+        object _disposeLock = new object();
+        bool _disposed = false;
 
         internal void OnInternalMessage(string format, object arg0)
         {
@@ -56,11 +58,15 @@ namespace Turbocharged.NSQ
             }
         }
 
-        internal NsqTcpConnection(DnsEndPoint endPoint, ConsumerOptions options, IBackoffStrategy backoffStrategy, MessageHandler handler)
+        public NsqTcpConnection(DnsEndPoint endPoint, ConsumerOptions options)
+            : this(endPoint, options, new ExponentialBackoffStrategy(TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(30)))
+        {
+        }
+
+        public NsqTcpConnection(DnsEndPoint endPoint, ConsumerOptions options, IBackoffStrategy backoffStrategy)
         {
             _endPoint = endPoint;
             _options = options;
-            _messageHandler = handler;
             _backoffStrategy = backoffStrategy;
 
             _connectionClosedSource = new CancellationTokenSource();
@@ -69,11 +75,10 @@ namespace Turbocharged.NSQ
             _workerThread.Name = "Turbocharged.NSQ Worker";
         }
 
-        public static async Task<NsqTcpConnection> ConnectAndWaitAsync(DnsEndPoint endPoint, ConsumerOptions options, MessageHandler handler)
+        public Task ConnectAndWaitAsync(MessageHandler handler)
         {
-            var connection = Connect(endPoint, options, handler);
-            await connection._firstConnection.Task.ConfigureAwait(false);
-            return connection;
+            Connect(handler);
+            return _firstConnection.Task;
         }
 
         /// <summary>
@@ -83,30 +88,16 @@ namespace Turbocharged.NSQ
         /// <param name="options">Options for the connection.</param>
         /// <param name="handler">The delegate used to handle delivered messages.</param>
         /// <returns>A connected NSQ connection.</returns>
-        public static NsqTcpConnection Connect(DnsEndPoint endPoint, ConsumerOptions options, MessageHandler handler)
+        public void Connect(MessageHandler handler)
         {
-            var backoffStrategy = new ExponentialBackoffStrategy(TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(30));
-            return Connect(endPoint, options, backoffStrategy, handler);
+            // Only start if we're the first
+            var wasStarted = Interlocked.CompareExchange(ref _started, 1, 0);
+            if (wasStarted != 0) return;
+
+            OnInternalMessage("Worker thread starting");
+            _workerThread.Start(handler);
+            OnInternalMessage("Worker thread started");
         }
-
-        internal static NsqTcpConnection Connect(DnsEndPoint endPoint, ConsumerOptions options, IBackoffStrategy backoffStrategy, MessageHandler handler)
-        {
-            var nsq = new NsqTcpConnection(endPoint, options, backoffStrategy, handler);
-
-            // The worker thread is responsible for:
-            //   a. Connecting to NSQ
-            //   b. Handshaking
-            //   c. Dispatching received messages to the thread pool
-
-            nsq.OnInternalMessage("Worker thread starting");
-            nsq._workerThread.Start();
-            nsq.OnInternalMessage("Worker thread started");
-
-            return nsq;
-        }
-
-        object _disposeLock = new object();
-        bool _disposed = false;
 
         public void Dispose()
         {
@@ -164,8 +155,9 @@ namespace Turbocharged.NSQ
             return SendCommandAsync(new Ready(maxInFlight));
         }
 
-        void WorkerLoop()
+        void WorkerLoop(object messageHandler)
         {
+            MessageHandler handler = (MessageHandler)messageHandler;
             bool firstConnectionAttempt = true;
             TcpClient client = null;
             FrameReader reader = null;
@@ -268,7 +260,7 @@ namespace Turbocharged.NSQ
                             OnInternalMessage("Received message. Length = {0}", frame.MessageSize);
                             var message = new Message(frame, this);
                             // TODO: Rethink this
-                            ThreadPool.QueueUserWorkItem(new WaitCallback(_ => { _messageHandler(message); }));
+                            ThreadPool.QueueUserWorkItem(new WaitCallback(_ => { handler(message); }));
                         }
                         else if (frame.Type == FrameType.Error)
                         {

@@ -6,17 +6,20 @@ using System.Threading.Tasks;
 
 namespace Turbocharged.NSQ
 {
-    interface IBackoffStrategy
+    public interface IBackoffStrategy
     {
         IBackoffLimiter Create();
     }
 
-    interface IBackoffLimiter
+    public interface IBackoffLimiter
     {
         bool ShouldReconnect(out TimeSpan delay);
     }
 
-    class FixedDelayBackoffStrategy : IBackoffStrategy
+    /// <summary>
+    /// Delays a constant amount of time between reconnections.
+    /// </summary>
+    public class FixedDelayBackoffStrategy : IBackoffStrategy
     {
         readonly TimeSpan _delay;
         public FixedDelayBackoffStrategy(TimeSpan delay)
@@ -45,7 +48,11 @@ namespace Turbocharged.NSQ
         }
     }
 
-    class ExponentialBackoffStrategy : IBackoffStrategy
+    /// <summary>
+    /// Delays reconnection with an expontential back-off. For example,
+    /// repeated attempts will delay 1 second, 2 seconds, 4 seconds, etc.
+    /// </summary>
+    public class ExponentialBackoffStrategy : IBackoffStrategy
     {
         readonly TimeSpan _initialDelay;
         readonly TimeSpan _maxDelay;
@@ -79,7 +86,11 @@ namespace Turbocharged.NSQ
         }
     }
 
-    class NoRetryBackoffStrategy : IBackoffStrategy
+    /// <summary>
+    /// Never retries reconnecting. A connection with this back-off strategy
+    /// will simply die when disconnected.
+    /// </summary>
+    public class NoRetryBackoffStrategy : IBackoffStrategy
     {
         public IBackoffLimiter Create()
         {

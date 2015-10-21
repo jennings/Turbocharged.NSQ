@@ -8,6 +8,8 @@ namespace Turbocharged.NSQ
 {
     public interface INsqConsumer : IDisposable
     {
+        void Connect(MessageHandler handler);
+        Task ConnectAndWaitAsync(MessageHandler handler);
         Task WriteAsync(MessageBody message);
         Task SetMaxInFlightAsync(int maxInFlight);
     }
@@ -16,37 +18,20 @@ namespace Turbocharged.NSQ
 
     public static class NsqConsumer
     {
-        public static INsqConsumer Connect(string connectionString, MessageHandler handler)
+        public static INsqConsumer Create(string connectionString)
         {
-            return Connect(ConsumerOptions.Parse(connectionString), handler);
+            return Create(ConsumerOptions.Parse(connectionString));
         }
 
-        public static Task<INsqConsumer> ConnectAndWaitAsync(string connectionString, MessageHandler handler)
-        {
-            return ConnectAndWaitAsync(ConsumerOptions.Parse(connectionString), handler);
-        }
-
-        public static INsqConsumer Connect(ConsumerOptions options, MessageHandler handler)
+        public static INsqConsumer Create(ConsumerOptions options)
         {
             if (options.LookupEndPoints.Any())
             {
-                return NsqLookupConsumer.Connect(options, handler);
+                return new NsqLookupConsumer(options);
             }
             else
             {
-                return NsqTcpConnection.Connect(options.NsqEndPoint, options, handler);
-            }
-        }
-
-        public static async Task<INsqConsumer> ConnectAndWaitAsync(ConsumerOptions options, MessageHandler handler)
-        {
-            if (options.LookupEndPoints.Any())
-            {
-                return await NsqLookupConsumer.ConnectAndWaitAsync(options, handler).ConfigureAwait(false);
-            }
-            else
-            {
-                return await NsqTcpConnection.ConnectAndWaitAsync(options.NsqEndPoint, options, handler).ConfigureAwait(false);
+                return new NsqTcpConnection(options.NsqEndPoint, options);
             }
         }
     }

@@ -39,8 +39,10 @@ namespace Turbocharged.NSQ.Tests
             options.Topic = "foo";
             options.Channel = "bar";
             var tcs = new TaskCompletionSource<bool>();
-            using (var conn = await NsqTcpConnection.ConnectAndWaitAsync(endPoint, options, msg => { tcs.TrySetResult(true); return msg.FinishAsync(); }))
+            using (var conn = new NsqTcpConnection(endPoint, options))
             {
+                Assert.False(conn.Connected);
+                await conn.ConnectAndWaitAsync(msg => { tcs.TrySetResult(true); return msg.FinishAsync(); });
                 Assert.True(conn.Connected);
 
                 // Just for kicks, verify we're working
@@ -57,19 +59,20 @@ namespace Turbocharged.NSQ.Tests
         public void ConsumerFactoryReturnsNsqTcpConnectionWhenNsqdEndPointIsGiven()
         {
             options.NsqEndPoint = endPoint;
-            using (var conn = NsqConsumer.Connect(options, msg => msg.FinishAsync()))
+            using (var conn = NsqConsumer.Create(options))
             {
                 Assert.IsType<NsqTcpConnection>(conn);
             }
         }
 
         [Fact]
-        public void ConnectionClosesProperly()
+        public async Task ConnectionClosesProperly()
         {
             options.Topic = "foo";
             options.Channel = "bar";
-            var conn = NsqTcpConnection.Connect(endPoint, options, msg => msg.FinishAsync());
+            var conn = new NsqTcpConnection(endPoint, options);
             conn.InternalMessages += (_, e) => Trace.WriteLine(e.Message);
+            await conn.ConnectAndWaitAsync(msg => msg.FinishAsync());
             conn.Dispose();
         }
 
@@ -84,15 +87,17 @@ namespace Turbocharged.NSQ.Tests
 
             var tcs = new TaskCompletionSource<Message>();
             var task = tcs.Task;
-            var conn = NsqTcpConnection.Connect(endPoint, options, async msg =>
-            {
-                await msg.FinishAsync();
-                tcs.TrySetResult(msg);
-            });
-            conn.InternalMessages += (_, e) => Trace.WriteLine(e.Message);
+            var conn = new NsqTcpConnection(endPoint, options);
 
             using (conn)
             {
+                conn.InternalMessages += (_, e) => Trace.WriteLine(e.Message);
+                await conn.ConnectAndWaitAsync(async msg =>
+                {
+                    await msg.FinishAsync();
+                    tcs.TrySetResult(msg);
+                });
+
                 await conn.SetMaxInFlightAsync(100);
                 await prod.PublishAsync(options.Topic, expectedData);
                 await Task.WhenAny(task, Task.Delay(1000));
@@ -113,15 +118,16 @@ namespace Turbocharged.NSQ.Tests
             await EmptyChannelAsync(options.Topic, options.Channel);
 
             int messagesReceived = 0;
-            var conn = NsqTcpConnection.Connect(endPoint, options, async msg =>
-            {
-                await msg.FinishAsync().ConfigureAwait(false);
-                Interlocked.Increment(ref messagesReceived);
-            });
-            conn.InternalMessages += (_, e) => Trace.WriteLine(e.Message);
+            var conn = new NsqTcpConnection(endPoint, options);
 
             using (conn)
             {
+                conn.InternalMessages += (_, e) => Trace.WriteLine(e.Message);
+                await conn.ConnectAndWaitAsync(async msg =>
+                {
+                    await msg.FinishAsync().ConfigureAwait(false);
+                    Interlocked.Increment(ref messagesReceived);
+                });
                 await conn.SetMaxInFlightAsync(100);
                 var messages = Enumerable.Range(0, 1000).Select(i => (MessageBody)BitConverter.GetBytes(i)).ToArray();
                 await prod.PublishAsync(options.Topic, messages);

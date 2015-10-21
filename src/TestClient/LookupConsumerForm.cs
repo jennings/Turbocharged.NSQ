@@ -55,13 +55,14 @@ namespace TestClient
             var connectionString = ConnectionString.Text;
             var options = ConsumerOptions.Parse(connectionString);
 
-            _nsq = NsqLookupConsumer.Connect(options, async msg =>
+            _nsq = new NsqLookupConsumer(options);
+            _nsq.DiscoveryCompleted += _nsq_DiscoveryCompleted;
+            _nsq.InternalMessages += _nsq_InternalMessages;
+            _nsq.Connect(async msg =>
             {
                 await c_MessageReceived(msg);
                 await msg.FinishAsync();
             });
-            _nsq.DiscoveryCompleted += _nsq_DiscoveryCompleted;
-            _nsq.InternalMessages += _nsq_InternalMessages;
         }
 
         Task c_MessageReceived(Turbocharged.NSQ.Message obj)

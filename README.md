@@ -25,8 +25,8 @@ A connection string looks like this:
 
 ### Consuming Messages
 
-    var cons = new NsqConsumer("nsqd=server1:4150");
-    await cons.ConnectAsync("my-topic", "my-channel", (t, c, byte[] msg) =>
+    var cons = NsqConsumer.Create("nsqd=server1:4150; topic=my-topic; channel=my-channel");
+    await cons.ConnectAndWaitAsync(Handler);
 
     static async Task Handler(Message message, IMessageFinalizer finalizer)
     {
@@ -45,14 +45,14 @@ A connection string looks like this:
 
 Or, to use nsqlookupd:
 
-    nsqlookupd=lookup1:4161,lookup2:4161;
+    lookup1:4161; lookup2:4161;
 
-A connection string must specify _either_ `nsqd` endpoints _or_ `nsqlookupd` endpoints, but not both.
+A connection string must specify _either_ an `nsqd` endpoint _or_ `nsqlookupd` endpoints, but not both.
 
 | Setting               | Description                                                                                           |
 | --------------------- | ----------------------------------------------------------------------------------------------------- |
-| nsqd={endpoints}      | List of `nsqd` servers in the form `hostname:tcpport`, e.g., `server1:4150,server2:4150`              |
-| lookupd={endpoints}   | List of `nsqlookupd` servers in the form `hostname:httpport`, e.g., `lookup1:4161,lookup2:4161`       |
+| lookupd={endpoints}   | List of `nsqlookupd` servers in the form `hostname:httpport`, e.g., `lookup1:4161;lookup2:4161`       |
+| nsqd={endpoints}      | A _single_ `nsqd` servers in the form `hostname:tcpport`, e.g., `nsqd=server1:4150;nsqd=server2:4150` |
 | clientId={string}     | A string identifying this client to the `nsqd` server                                                 |
 | hostname={string}     | The hostname to identify as (defaults to Environment.MachineName)                                     |
 | maxInFlight={int}     | The maximum number of messages this client wants to receive without completion                        |

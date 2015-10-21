@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Turbocharged.NSQ
@@ -11,13 +12,14 @@ namespace Turbocharged.NSQ
     {
         readonly Dictionary<DnsEndPoint, NsqTcpConnection> _connections = new Dictionary<DnsEndPoint, NsqTcpConnection>();
         readonly List<NsqLookup> _lookupServers = new List<NsqLookup>();
-        readonly System.Threading.Timer _lookupTimer;
         readonly ConsumerOptions _options;
-        readonly MessageHandler _handler;
         readonly Task _firstConnectionTask;
+        readonly TaskCompletionSource<bool> _firstConnectionTaskCompletionSource = new TaskCompletionSource<bool>();
 
+        System.Threading.Timer _lookupTimer;
         bool _firstDiscoveryCycle = true;
         int _maxInFlight = 0;
+        int _started = 0;
 
         // No need to ever reconnect, we'll reconnect on the next lookup cycle
         static readonly NoRetryBackoffStrategy _noRetryBackoff = new NoRetryBackoffStrategy();
@@ -52,51 +54,40 @@ namespace Turbocharged.NSQ
             }
         }
 
-        NsqLookupConsumer(ConsumerOptions options, MessageHandler handler)
+        public NsqLookupConsumer(ConsumerOptions options)
         {
             _options = options;
-            _handler = handler;
 
             foreach (var lookupEndPoint in options.LookupEndPoints)
             {
                 _lookupServers.Add(new NsqLookup(lookupEndPoint.Host, lookupEndPoint.Port));
             }
 
-            var tcs = new TaskCompletionSource<bool>();
-            _firstConnectionTask = tcs.Task;
-
-            // Start the lookup timer
-            _lookupTimer = new System.Threading.Timer(LookupTask, tcs, TimeSpan.Zero, _options.LookupPeriod);
+            _firstConnectionTask = _firstConnectionTaskCompletionSource.Task;
         }
 
-        public static async Task<NsqLookupConsumer> ConnectAndWaitAsync(string connectionString, MessageHandler handler)
+        public NsqLookupConsumer(string connectionString)
+            : this(ConsumerOptions.Parse(connectionString))
         {
-            var consumer = Connect(connectionString, handler);
-            await consumer._firstConnectionTask.ConfigureAwait(false);
-            return consumer;
         }
 
-        public static async Task<NsqLookupConsumer> ConnectAndWaitAsync(ConsumerOptions options, MessageHandler handler)
+        public async Task ConnectAndWaitAsync(MessageHandler handler)
         {
-            var consumer = Connect(options, handler);
-            await consumer._firstConnectionTask.ConfigureAwait(false);
-            return consumer;
+            Connect(handler);
+            await _firstConnectionTask.ConfigureAwait(false);
         }
 
-        public static NsqLookupConsumer Connect(string connectionString, MessageHandler handler)
+        public void Connect(MessageHandler handler)
         {
-            return Connect(ConsumerOptions.Parse(connectionString), handler);
+            var wasStarted = Interlocked.CompareExchange(ref _started, 1, 0);
+            if (wasStarted != 0) return;
+
+            _lookupTimer = new System.Threading.Timer(LookupTask, handler, TimeSpan.Zero, _options.LookupPeriod);
         }
 
-        public static NsqLookupConsumer Connect(ConsumerOptions options, MessageHandler handler)
+        void LookupTask(object messageHandler)
         {
-            var consumer = new NsqLookupConsumer(options, handler);
-            return consumer;
-        }
-
-        void LookupTask(object firstConnection)
-        {
-            var firstConnectionTcs = (TaskCompletionSource<bool>)firstConnection;
+            MessageHandler handler = (MessageHandler)messageHandler;
 
             OnInternalMessage("Begin lookup cycle");
             int beginningCount, endingCount,
@@ -135,9 +126,10 @@ namespace Turbocharged.NSQ
                 {
                     if (!_connections.ContainsKey(endPoint))
                     {
-                        var connection = NsqTcpConnection.Connect(endPoint, _options, _noRetryBackoff, _handler);
+                        var connection = new NsqTcpConnection(endPoint, _options, _noRetryBackoff);
                         connection.InternalMessages +=
                             ((EventHandler<InternalMessageEventArgs>)((sender, e) => OnInternalMessage("{0}: {1}", endPoint, e.Message)));
+                        connection.Connect(handler);
                         _connections[endPoint] = connection;
                         added++;
                     }
@@ -150,7 +142,7 @@ namespace Turbocharged.NSQ
 
                 if (_firstDiscoveryCycle)
                 {
-                    firstConnectionTcs.TrySetResult(true);
+                    _firstConnectionTaskCompletionSource.TrySetResult(true);
                     _firstDiscoveryCycle = false;
                 }
             }

@@ -39,12 +39,13 @@ namespace TestClient
             var options = ConsumerOptions.Parse(string.Format("nsqd={0}:{1}", host, port));
             options.Topic = TopicTextBox.Text;
             options.Channel = ChannelTextBox.Text;
-            _nsq = NsqTcpConnection.Connect(new DnsEndPoint(host, port), options, async msg =>
+            _nsq = new NsqTcpConnection(new DnsEndPoint(host, port), options);
+            _nsq.InternalMessages += _nsq_InternalMessages;
+            _nsq.Connect(async msg =>
             {
                 await c_MessageReceived(msg);
                 await msg.FinishAsync();
             });
-            _nsq.InternalMessages += _nsq_InternalMessages;
 
         }
 
