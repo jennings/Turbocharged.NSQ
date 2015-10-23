@@ -20,6 +20,7 @@ namespace Turbocharged.NSQ
         bool _firstDiscoveryCycle = true;
         int _maxInFlight = 0;
         int _started = 0;
+        bool _disposed;
 
         // No need to ever reconnect, we'll reconnect on the next lookup cycle
         static readonly NoRetryBackoffStrategy _noRetryBackoff = new NoRetryBackoffStrategy();
@@ -73,12 +74,14 @@ namespace Turbocharged.NSQ
 
         public async Task ConnectAndWaitAsync(MessageHandler handler)
         {
+            ThrowIfDisposed();
             Connect(handler);
             await _firstConnectionTask.ConfigureAwait(false);
         }
 
         public void Connect(MessageHandler handler)
         {
+            ThrowIfDisposed();
             var wasStarted = Interlocked.CompareExchange(ref _started, 1, 0);
             if (wasStarted != 0) return;
 
@@ -93,13 +96,15 @@ namespace Turbocharged.NSQ
             int beginningCount, endingCount,
                 added = 0, removed = 0;
 
+            List<DnsEndPoint> currentEndPoints;
+            List<NsqAddress> nsqAddresses;
             lock (_connections)
             {
                 var tasks = _lookupServers.Select(server => server.LookupAsync(_options.Topic)).ToList();
                 var delay = Task.Delay(5000);
                 Task.WhenAny(Task.WhenAll(tasks), delay).Wait();
 
-                var nsqAddresses =
+                nsqAddresses =
                     tasks.Where(t => t.Status == TaskStatus.RanToCompletion)
                     .SelectMany(t => t.Result)
                     .Distinct()
@@ -110,7 +115,7 @@ namespace Turbocharged.NSQ
                     .Select(add => new DnsEndPoint(add.BroadcastAddress, add.TcpPort))
                     .ToList();
 
-                var currentEndPoints = _connections.Keys;
+                currentEndPoints = _connections.Keys.ToList();
                 var newEndPoints = servers.Except(currentEndPoints).ToList();
                 var removedEndPoints = currentEndPoints.Except(servers).ToList();
 
@@ -129,29 +134,40 @@ namespace Turbocharged.NSQ
                         var connection = new NsqTcpConnection(endPoint, _options, _noRetryBackoff);
                         connection.InternalMessages +=
                             ((EventHandler<InternalMessageEventArgs>)((sender, e) => OnInternalMessage("{0}: {1}", endPoint, e.Message)));
-                        connection.Connect(handler);
-                        _connections[endPoint] = connection;
-                        added++;
+                        try
+                        {
+                            connection.Connect(handler);
+                            _connections[endPoint] = connection;
+                            added++;
+                        }
+                        catch (Exception ex)
+                        {
+                            // If Connect() fails, move on with life
+                            // We'll try again next round
+                            OnInternalMessage("Connection to endpoint {0} failed: {1}", endPoint, ex.Message);
+                        }
                     }
                 }
 
                 beginningCount = currentEndPoints.Count;
                 endingCount = _connections.Count;
 
-                OnDiscoveryCompleted(nsqAddresses.ToList());
-
-                if (_firstDiscoveryCycle)
-                {
-                    _firstConnectionTaskCompletionSource.TrySetResult(true);
-                    _firstDiscoveryCycle = false;
-                }
+                SetMaxInFlightWithoutWaitingForInitialConnectionAsync(_maxInFlight).Wait();
             }
 
+            if (_firstDiscoveryCycle)
+            {
+                _firstConnectionTaskCompletionSource.TrySetResult(true);
+                _firstDiscoveryCycle = false;
+            }
+
+            OnDiscoveryCompleted(nsqAddresses);
             OnInternalMessage("End lookup cycle. BeginningCount = {0}, EndingCount = {1}, Added = {2}, Removed = {3}", beginningCount, endingCount, added, removed);
         }
 
         public async Task WriteAsync(MessageBody message)
         {
+            ThrowIfDisposed();
             await _firstConnectionTask.ConfigureAwait(false);
 
             List<NsqTcpConnection> connections;
@@ -181,9 +197,15 @@ namespace Turbocharged.NSQ
 
         public async Task SetMaxInFlightAsync(int maxInFlight)
         {
+            ThrowIfDisposed();
             _maxInFlight = maxInFlight;
             await _firstConnectionTask.ConfigureAwait(false);
+            await SetMaxInFlightWithoutWaitingForInitialConnectionAsync(maxInFlight).ConfigureAwait(false);
+        }
 
+        // I need a better name for this
+        async Task SetMaxInFlightWithoutWaitingForInitialConnectionAsync(int maxInFlight)
+        {
             List<NsqTcpConnection> connections;
             lock (_connections)
             {
@@ -219,11 +241,18 @@ namespace Turbocharged.NSQ
         {
             lock (_connections)
             {
+                _disposed = true;
+
                 _lookupTimer.Dispose();
 
                 foreach (var connection in _connections.Values)
                     connection.Dispose();
             }
+        }
+
+        void ThrowIfDisposed()
+        {
+            if (_disposed) throw new ObjectDisposedException("NsqLookupConnection");
         }
     }
 }
