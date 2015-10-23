@@ -205,10 +205,11 @@ namespace Turbocharged.NSQ
                     {
                         if (t.Status == TaskStatus.Faulted)
                         {
+                            connection.Dispose();
                             OnInternalMessage("Setting MaxInFlight on {0} threw: {1}", connection._endPoint, t.Exception.GetBaseException().Message);
                         }
                     });
-                tasks.Add(connection.SetMaxInFlightAsync(max));
+                tasks.Add(setMaxTask);
             }
 
             await Task.WhenAll(tasks).ConfigureAwait(false);
