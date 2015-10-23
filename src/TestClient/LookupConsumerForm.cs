@@ -29,11 +29,9 @@ namespace TestClient
 
         void _nsq_DiscoveryCompleted(object s, DiscoveryEventArgs e)
         {
-            if (InvokeRequired)
-            {
-                Invoke((Action<object, DiscoveryEventArgs>)_nsq_DiscoveryCompleted, s, e);
-            }
-            else
+            if (IsDisposed) return;
+
+            InvokeIfRequired(() =>
             {
                 _endPoints.Clear();
                 foreach (var address in e.NsqAddresses)
@@ -42,12 +40,26 @@ namespace TestClient
                 }
 
                 LastDiscoveryTime.Text = DateTime.Now.ToString("T");
-            }
+            });
         }
 
         void _nsq_InternalMessages(object s, InternalMessageEventArgs e)
         {
+            if (IsDisposed) return;
             PostMessage("INTERNAL: " + e.Message);
+        }
+
+        void InvokeIfRequired(Action action)
+        {
+            if (InvokeRequired)
+            {
+                if (IsDisposed) return;
+                Invoke(action);
+            }
+            else
+            {
+                action();
+            }
         }
 
         void ConnectButton_Click(object sender, EventArgs e)
@@ -82,11 +94,11 @@ namespace TestClient
         void PostMessage(string obj)
         {
             var threadId = Thread.CurrentThread.ManagedThreadId;
-            Invoke((Action)(() =>
+            InvokeIfRequired(() =>
             {
                 _messages.Add(obj + " (ThreadId = " + threadId + ")");
                 ReceivedMessages.SelectedIndex = ReceivedMessages.Items.Count - 1;
-            }));
+            });
         }
 
         void DisconnectButton_Click(object sender, EventArgs e)

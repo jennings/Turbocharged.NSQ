@@ -281,13 +281,13 @@ namespace Turbocharged.NSQ
                 }
                 catch (IOException ex)
                 {
-                    OnInternalMessage("EXCEPTION: {0}", ex.Message);
+                    if (!_disposed) OnInternalMessage("EXCEPTION: {0}", ex.Message);
                     Connected = false;
                     continue;
                 }
                 catch (SocketException ex)
                 {
-                    OnInternalMessage("EXCEPTION: {0}", ex.Message);
+                    if (!_disposed) OnInternalMessage("EXCEPTION: {0}", ex.Message);
                     Connected = false;
                     continue;
                 }
