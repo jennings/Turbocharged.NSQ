@@ -10,7 +10,7 @@ namespace Turbocharged.NSQ
     {
         void Connect(MessageHandler handler);
         Task ConnectAndWaitAsync(MessageHandler handler);
-        Task WriteAsync(MessageBody message);
+        Task PublishAsync(Topic topic, MessageBody message);
         Task SetMaxInFlightAsync(int maxInFlight);
     }
 

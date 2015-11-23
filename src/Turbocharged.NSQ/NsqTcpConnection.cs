@@ -8,6 +8,7 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Turbocharged.NSQ.Commands;
 
 namespace Turbocharged.NSQ
 {
@@ -113,8 +114,14 @@ namespace Turbocharged.NSQ
         /// <summary>
         /// Publishes a message to NSQ.
         /// </summary>
-        public async Task WriteAsync(MessageBody message)
+        public Task PublishAsync(Topic topic, MessageBody message)
         {
+            return SendCommandAsync(new Publish(topic, message));
+        }
+
+        internal async Task SendCommandAsync(ICommand command)
+        {
+            var buffer = command.ToByteArray();
             while (true)
             {
                 NetworkStream stream;
@@ -129,7 +136,6 @@ namespace Turbocharged.NSQ
                 {
                     if (stream != null)
                     {
-                        byte[] buffer = message;
                         await stream.WriteAsync(buffer, 0, buffer.Length).ConfigureAwait(false);
                         return;
                     }
@@ -314,13 +320,13 @@ namespace Turbocharged.NSQ
                 throw new NotSupportedException("Authorization is not supported");
             }
 
-            SendCommand(stream, new Subscribe(_options.Topic, _options.Channel));
+            SendCommandToStream(stream, new Subscribe(_options.Topic, _options.Channel));
         }
 
         IdentifyResponse Identify(NetworkStream stream, FrameReader reader)
         {
             var identify = new Identify(_options);
-            SendCommand(stream, identify);
+            SendCommandToStream(stream, identify);
             var frame = reader.ReadFrame();
             if (frame.Type != FrameType.Result)
             {
@@ -329,16 +335,10 @@ namespace Turbocharged.NSQ
             return identify.ParseIdentifyResponse(frame.Data);
         }
 
-        void SendCommand(NetworkStream stream, ICommand command)
+        static void SendCommandToStream(NetworkStream stream, ICommand command)
         {
             var msg = command.ToByteArray();
             stream.Write(msg, 0, msg.Length);
-        }
-
-        internal Task SendCommandAsync(ICommand command)
-        {
-            var msg = command.ToByteArray();
-            return WriteAsync(msg);
         }
     }
 }

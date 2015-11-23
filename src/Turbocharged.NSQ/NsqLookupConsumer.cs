@@ -165,7 +165,7 @@ namespace Turbocharged.NSQ
             OnInternalMessage("End lookup cycle. BeginningCount = {0}, EndingCount = {1}, Added = {2}, Removed = {3}", beginningCount, endingCount, added, removed);
         }
 
-        public async Task WriteAsync(MessageBody message)
+        public async Task PublishAsync(Topic topic, MessageBody message)
         {
             ThrowIfDisposed();
             await _firstConnectionTask.ConfigureAwait(false);
@@ -183,7 +183,7 @@ namespace Turbocharged.NSQ
             {
                 try
                 {
-                    await thing.WriteAsync(message).ConfigureAwait(false);
+                    await thing.PublishAsync(topic, message).ConfigureAwait(false);
                     return;
                 }
                 catch

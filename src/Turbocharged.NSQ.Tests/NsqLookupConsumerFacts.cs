@@ -42,7 +42,7 @@ namespace Turbocharged.NSQ.Tests
 
                 await Task.WhenAll(
                     consumer.SetMaxInFlightAsync(100),
-                    consumer.WriteAsync("hello"));
+                    consumer.PublishAsync(options.Topic, "hello"));
                 var task = tcs.Task;
                 var done = await Task.WhenAny(task, Task.Delay(1000));
                 Assert.Same(task, done);

@@ -48,6 +48,7 @@
     <Compile Include="BackoffStrategies.cs" />
     <Compile Include="Commands\ByteArrays.cs" />
     <Compile Include="Commands\Finish.cs" />
+    <Compile Include="Commands\Publish.cs" />
     <Compile Include="CommunicationException.cs" />
     <Compile Include="Frame.cs" />
     <Compile Include="Commands\ICommand.cs" />
