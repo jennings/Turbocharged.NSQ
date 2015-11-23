@@ -19,6 +19,10 @@ namespace Turbocharged.NSQ
         const int MESSAGE_ID_LENGTH = 4;
         readonly NetworkStream _stream;
 
+        readonly object _lock = new object();
+        readonly byte[] _frameSizeBuffer = new byte[FRAME_SIZE_LENGTH];
+        readonly byte[] _frameTypeBuffer = new byte[FRAME_TYPE_LENGTH];
+
         public FrameReader(NetworkStream stream)
         {
             _stream = stream;
@@ -26,48 +30,48 @@ namespace Turbocharged.NSQ
 
         public Frame ReadFrame()
         {
-            // MESSAGE FRAME FORMAT:
-            //   4 bytes - Int32, size of the frame, excluding this field
-            //   4 bytes - Int32, frame type
-            //   N bytes - data
-            //      8 bytes - Int64, timestamp
-            //      2 bytes - UInt16, attempts
-            //     16 bytes - Hex-string encoded message ID
-            //      N bytes - message body
-
-            // Get the size of the incoming frame
-            byte[] frameSizeBytes = ReadBytes(FRAME_SIZE_LENGTH);
-            if (BitConverter.IsLittleEndian)
-                Array.Reverse(frameSizeBytes);
-            var frameLength = BitConverter.ToInt32(frameSizeBytes, 0);
-
-            // Read the rest of the frame
-            var frame = ReadBytes(frameLength);
-
-            // Get the frame type
-            byte[] frameTypeBytes = new byte[FRAME_TYPE_LENGTH];
-            Array.ConstrainedCopy(frame, 0, frameTypeBytes, 0, FRAME_TYPE_LENGTH);
-            if (BitConverter.IsLittleEndian)
-                Array.Reverse(frameTypeBytes);
-            var frameType = (FrameType)BitConverter.ToInt32(frameTypeBytes, 0);
-
-            // Get the data portion of the frame
-            var dataLength = frameLength - FRAME_TYPE_LENGTH;
-            byte[] dataBuffer = new byte[dataLength];
-            Array.ConstrainedCopy(frame, FRAME_TYPE_LENGTH, dataBuffer, 0, dataLength);
-
-            return new Frame
+            lock (_lock)
             {
-                MessageSize = frameLength,
-                Type = frameType,
-                Data = dataBuffer,
-            };
+                // MESSAGE FRAME FORMAT:
+                //   4 bytes - Int32, size of the frame, excluding this field
+                //   4 bytes - Int32, frame type
+                //   N bytes - data
+                //      8 bytes - Int64, timestamp
+                //      2 bytes - UInt16, attempts
+                //     16 bytes - Hex-string encoded message ID
+                //      N bytes - message body
+
+                // Get the size of the incoming frame
+                ReadBytes(_frameSizeBuffer, 0, FRAME_SIZE_LENGTH);
+                if (BitConverter.IsLittleEndian)
+                    Array.Reverse(_frameSizeBuffer);
+                var frameLength = BitConverter.ToInt32(_frameSizeBuffer, 0);
+
+                // Read the rest of the frame
+                var frame = ReadBytesWithAllocation(frameLength);
+
+                // Get the frame type
+                Array.ConstrainedCopy(frame, 0, _frameTypeBuffer, 0, FRAME_TYPE_LENGTH);
+                if (BitConverter.IsLittleEndian)
+                    Array.Reverse(_frameTypeBuffer);
+                var frameType = (FrameType)BitConverter.ToInt32(_frameTypeBuffer, 0);
+
+                // Get the data portion of the frame
+                var dataLength = frameLength - FRAME_TYPE_LENGTH;
+                byte[] dataBuffer = new byte[dataLength];
+                Array.ConstrainedCopy(frame, FRAME_TYPE_LENGTH, dataBuffer, 0, dataLength);
+
+                return new Frame
+                {
+                    MessageSize = frameLength,
+                    Type = frameType,
+                    Data = dataBuffer,
+                };
+            }
         }
 
-        byte[] ReadBytes(int count)
+        void ReadBytes(byte[] buffer, int offset, int count)
         {
-            byte[] buffer = new byte[count];
-            int offset = 0;
             int bytesRead = 0;
             int bytesLeft = count;
 
@@ -81,7 +85,13 @@ namespace Turbocharged.NSQ
 
             if (bytesLeft > 0)
                 throw new SocketException((int)SocketError.SocketError);
+        }
 
+        byte[] ReadBytesWithAllocation(int count)
+        {
+            byte[] buffer = new byte[count];
+            int offset = 0;
+            ReadBytes(buffer, offset, count);
             return buffer;
         }
     }
