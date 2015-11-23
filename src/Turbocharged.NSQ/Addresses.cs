@@ -34,6 +34,22 @@ namespace Turbocharged.NSQ
             return false;
         }
 
+        public override int GetHashCode()
+        {
+            // See: http://stackoverflow.com/a/263416/19818
+            const int BASE = 151;
+            const int MIXER = 2011;
+            unchecked // Overflow is fine
+            {
+                int hash = BASE;
+                hash = hash * MIXER + HttpPort.GetHashCode();
+                if (HostName != null)
+                    hash = hash * MIXER + HostName.GetHashCode();
+
+                return hash;
+            }
+        }
+
         /// <summary>
         /// The address of an nsqd instance.
         /// </summary>
@@ -66,6 +82,28 @@ namespace Turbocharged.NSQ
         public override string ToString()
         {
             return "BroadcastAddress = " + BroadcastAddress + ", TcpPort = " + TcpPort;
+        }
+
+        public override int GetHashCode()
+        {
+            // See: http://stackoverflow.com/a/263416/19818
+            const int BASE = 151;
+            const int MIXER = 2011;
+            unchecked // Overflow is fine
+            {
+                int hash = BASE;
+
+                hash = hash * MIXER + HttpPort.GetHashCode();
+                hash = hash * MIXER + TcpPort.GetHashCode();
+
+                if (BroadcastAddress != null)
+                    hash = hash * MIXER + BroadcastAddress.GetHashCode();
+
+                if (HostName != null)
+                    hash = hash * MIXER + HostName.GetHashCode();
+
+                return hash;
+            }
         }
 
         public override bool Equals(object obj)
