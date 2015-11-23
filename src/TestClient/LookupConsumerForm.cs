@@ -13,40 +13,68 @@ using Turbocharged.NSQ;
 
 namespace TestClient
 {
-    public partial class ConsumerForm : Form
+    public partial class LookupConsumerForm : Form
     {
         BindingList<string> _messages = new BindingList<string>();
-        NsqTcpConnection _nsq;
+        BindingList<string> _endPoints = new BindingList<string>();
+        NsqLookupConsumer _nsq;
 
-        public ConsumerForm(string host, int port)
+        public LookupConsumerForm(string connectionString)
         {
             InitializeComponent();
-            Host.Text = host;
-            Port.Text = port.ToString();
+            ConnectionString.Text = connectionString;
             ReceivedMessages.DataSource = _messages;
+            DiscoveredEndPoints.DataSource = _endPoints;
+        }
+
+        void _nsq_DiscoveryCompleted(object s, DiscoveryEventArgs e)
+        {
+            if (IsDisposed) return;
+
+            InvokeIfRequired(() =>
+            {
+                _endPoints.Clear();
+                foreach (var address in e.NsqAddresses)
+                {
+                    _endPoints.Add(address.BroadcastAddress + ":" + address.TcpPort);
+                }
+
+                LastDiscoveryTime.Text = DateTime.Now.ToString("T");
+            });
         }
 
         void _nsq_InternalMessages(object s, InternalMessageEventArgs e)
         {
+            if (IsDisposed) return;
             PostMessage("INTERNAL: " + e.Message);
+        }
+
+        void InvokeIfRequired(Action action)
+        {
+            if (InvokeRequired)
+            {
+                if (IsDisposed) return;
+                Invoke(action);
+            }
+            else
+            {
+                action();
+            }
         }
 
         void ConnectButton_Click(object sender, EventArgs e)
         {
-            var host = Host.Text;
-            var port = int.Parse(Port.Text);
+            var connectionString = ConnectionString.Text;
+            var options = ConsumerOptions.Parse(connectionString);
 
-            var options = ConsumerOptions.Parse(string.Format("nsqd={0}:{1}", host, port));
-            options.Topic = TopicTextBox.Text;
-            options.Channel = ChannelTextBox.Text;
-            _nsq = new NsqTcpConnection(new DnsEndPoint(host, port), options);
+            _nsq = new NsqLookupConsumer(options);
+            _nsq.DiscoveryCompleted += _nsq_DiscoveryCompleted;
             _nsq.InternalMessages += _nsq_InternalMessages;
             _nsq.Connect(async msg =>
             {
                 await c_MessageReceived(msg);
                 await msg.FinishAsync();
             });
-
         }
 
         Task c_MessageReceived(Turbocharged.NSQ.Message obj)
@@ -66,11 +94,11 @@ namespace TestClient
         void PostMessage(string obj)
         {
             var threadId = Thread.CurrentThread.ManagedThreadId;
-            Invoke((Action)(() =>
+            InvokeIfRequired(() =>
             {
                 _messages.Add(obj + " (ThreadId = " + threadId + ")");
                 ReceivedMessages.SelectedIndex = ReceivedMessages.Items.Count - 1;
-            }));
+            });
         }
 
         void DisconnectButton_Click(object sender, EventArgs e)

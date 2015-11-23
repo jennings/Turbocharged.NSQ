@@ -53,5 +53,13 @@ namespace TestClient
             form.Show();
             form.Activate();
         }
+
+        void button4_Click(object sender, EventArgs e)
+        {
+            var connectionString = string.Format("{0}:{1}; topic={2}; channel={3}", lookupHostName, lookupPort, "signups", "email");
+            var form = new LookupConsumerForm(connectionString);
+            form.Show();
+            form.Activate();
+        }
     }
 }

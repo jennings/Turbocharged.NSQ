@@ -43,13 +43,11 @@ namespace Turbocharged.NSQ
             {
                 return
                     ((JArray)response["data"]["producers"])
-                    .Select(producer => new NsqAddress
-                    {
-                        BroadcastAddress = (string)producer["broadcast_address"],
-                        HostName = (string)producer["hostname"],
-                        HttpPort = (int)producer["http_port"],
-                        TcpPort = (int)producer["tcp_port"],
-                    })
+                    .Select(producer => new NsqAddress(
+                            (string)producer["broadcast_address"],
+                            (string)producer["hostname"],
+                            (int)producer["tcp_port"],
+                            (int)producer["http_port"]))
                     .ToList();
             });
         }
@@ -90,13 +88,11 @@ namespace Turbocharged.NSQ
             {
                 return
                     ((JArray)response["data"]["producers"])
-                    .Select(producer => new NsqAddress
-                    {
-                        BroadcastAddress = (string)producer["broadcast_address"],
-                        HostName = (string)producer["hostname"],
-                        HttpPort = (int)producer["http_port"],
-                        TcpPort = (int)producer["tcp_port"],
-                    })
+                    .Select(producer => new NsqAddress(
+                            (string)producer["broadcast_address"],
+                            (string)producer["hostname"],
+                            (int)producer["tcp_port"],
+                            (int)producer["http_port"]))
                     .ToList();
             });
         }

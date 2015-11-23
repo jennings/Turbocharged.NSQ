@@ -8,14 +8,14 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using HandlerFunc = System.Func<Turbocharged.NSQ.Message, System.Threading.Tasks.Task>;
+using Turbocharged.NSQ.Commands;
 
 namespace Turbocharged.NSQ
 {
     /// <summary>
     /// Maintains a TCP connection to a single nsqd instance and allows consuming messages.
     /// </summary>
-    public sealed class NsqTcpConnection : IDisposable
+    public sealed class NsqTcpConnection : INsqConsumer, IDisposable
     {
         static readonly byte[] HEARTBEAT = Encoding.ASCII.GetBytes("_heartbeat_");
         static readonly byte[] MAGIC_V2 = Encoding.ASCII.GetBytes("  V2");
@@ -26,10 +26,10 @@ namespace Turbocharged.NSQ
 
         readonly CancellationTokenSource _connectionClosedSource;
         readonly ConsumerOptions _options;
-        readonly DnsEndPoint _endPoint;
-        readonly HandlerFunc _messageHandler;
+        readonly internal DnsEndPoint _endPoint;
         readonly IBackoffStrategy _backoffStrategy;
         readonly Thread _workerThread;
+        readonly TaskCompletionSource<bool> _firstConnection = new TaskCompletionSource<bool>();
 
         readonly object _connectionSwapLock = new object();
         readonly object _connectionSwapInProgressLock = new object();
@@ -37,6 +37,9 @@ namespace Turbocharged.NSQ
         IdentifyResponse _identifyResponse;
         NetworkStream _stream;
         TaskCompletionSource<bool> _nextReconnectionTaskSource = new TaskCompletionSource<bool>();
+        int _started = 0;
+        object _disposeLock = new object();
+        bool _disposed = false;
 
         internal void OnInternalMessage(string format, object arg0)
         {
@@ -56,17 +59,27 @@ namespace Turbocharged.NSQ
             }
         }
 
-        internal NsqTcpConnection(DnsEndPoint endPoint, ConsumerOptions options, IBackoffStrategy backoffStrategy, HandlerFunc handler)
+        public NsqTcpConnection(DnsEndPoint endPoint, ConsumerOptions options)
+            : this(endPoint, options, new ExponentialBackoffStrategy(TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(30)))
+        {
+        }
+
+        public NsqTcpConnection(DnsEndPoint endPoint, ConsumerOptions options, IBackoffStrategy backoffStrategy)
         {
             _endPoint = endPoint;
             _options = options;
-            _messageHandler = handler;
             _backoffStrategy = backoffStrategy;
 
             _connectionClosedSource = new CancellationTokenSource();
 
             _workerThread = new Thread(WorkerLoop);
             _workerThread.Name = "Turbocharged.NSQ Worker";
+        }
+
+        public Task ConnectAndWaitAsync(MessageHandler handler)
+        {
+            Connect(handler);
+            return _firstConnection.Task;
         }
 
         /// <summary>
@@ -76,30 +89,16 @@ namespace Turbocharged.NSQ
         /// <param name="options">Options for the connection.</param>
         /// <param name="handler">The delegate used to handle delivered messages.</param>
         /// <returns>A connected NSQ connection.</returns>
-        public static NsqTcpConnection Connect(DnsEndPoint endPoint, ConsumerOptions options, HandlerFunc handler)
+        public void Connect(MessageHandler handler)
         {
-            var backoffStrategy = new ExponentialBackoffStrategy(TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(30));
-            return Connect(endPoint, options, backoffStrategy, handler);
+            // Only start if we're the first
+            var wasStarted = Interlocked.CompareExchange(ref _started, 1, 0);
+            if (wasStarted != 0) return;
+
+            OnInternalMessage("Worker thread starting");
+            _workerThread.Start(handler);
+            OnInternalMessage("Worker thread started");
         }
-
-        internal static NsqTcpConnection Connect(DnsEndPoint endPoint, ConsumerOptions options, IBackoffStrategy backoffStrategy, HandlerFunc handler)
-        {
-            var nsq = new NsqTcpConnection(endPoint, options, backoffStrategy, handler);
-
-            // The worker thread is responsible for:
-            //   a. Connecting to NSQ
-            //   b. Handshaking
-            //   c. Dispatching received messages to the thread pool
-
-            nsq.OnInternalMessage("Worker thread starting");
-            nsq._workerThread.Start();
-            nsq.OnInternalMessage("Worker thread started");
-
-            return nsq;
-        }
-
-        object _disposeLock = new object();
-        bool _disposed = false;
 
         public void Dispose()
         {
@@ -115,8 +114,14 @@ namespace Turbocharged.NSQ
         /// <summary>
         /// Publishes a message to NSQ.
         /// </summary>
-        public async Task WriteAsync(MessageBody message)
+        public Task PublishAsync(Topic topic, MessageBody message)
         {
+            return SendCommandAsync(new Publish(topic, message));
+        }
+
+        internal async Task SendCommandAsync(ICommand command)
+        {
+            var buffer = command.ToByteArray();
             while (true)
             {
                 NetworkStream stream;
@@ -131,7 +136,6 @@ namespace Turbocharged.NSQ
                 {
                     if (stream != null)
                     {
-                        byte[] buffer = message;
                         await stream.WriteAsync(buffer, 0, buffer.Length).ConfigureAwait(false);
                         return;
                     }
@@ -157,8 +161,9 @@ namespace Turbocharged.NSQ
             return SendCommandAsync(new Ready(maxInFlight));
         }
 
-        void WorkerLoop()
+        void WorkerLoop(object messageHandler)
         {
+            MessageHandler handler = (MessageHandler)messageHandler;
             bool firstConnectionAttempt = true;
             TcpClient client = null;
             FrameReader reader = null;
@@ -229,6 +234,7 @@ namespace Turbocharged.NSQ
 
                                 Handshake(_stream, reader);
 
+                                _firstConnection.TrySetResult(true);
 
                                 // Start a new backoff cycle next time we disconnect
                                 backoffLimiter = null;
@@ -260,11 +266,20 @@ namespace Turbocharged.NSQ
                             OnInternalMessage("Received message. Length = {0}", frame.MessageSize);
                             var message = new Message(frame, this);
                             // TODO: Rethink this
-                            ThreadPool.QueueUserWorkItem(new WaitCallback(_ => { _messageHandler(message); }));
+                            ThreadPool.QueueUserWorkItem(new WaitCallback(_ => { handler(message); }));
                         }
                         else if (frame.Type == FrameType.Error)
                         {
-                            OnInternalMessage("Received error. Length = {0}", frame.MessageSize);
+                            string errorString;
+                            try
+                            {
+                                errorString = Encoding.ASCII.GetString(frame.Data);
+                            }
+                            catch
+                            {
+                                errorString = BitConverter.ToString(frame.Data);
+                            }
+                            OnInternalMessage("Received error. Message = {0}", errorString);
                         }
                         else
                         {
@@ -281,13 +296,13 @@ namespace Turbocharged.NSQ
                 }
                 catch (IOException ex)
                 {
-                    OnInternalMessage("EXCEPTION: {0}", ex.Message);
+                    if (!_disposed) OnInternalMessage("EXCEPTION: {0}", ex.Message);
                     Connected = false;
                     continue;
                 }
                 catch (SocketException ex)
                 {
-                    OnInternalMessage("EXCEPTION: {0}", ex.Message);
+                    if (!_disposed) OnInternalMessage("EXCEPTION: {0}", ex.Message);
                     Connected = false;
                     continue;
                 }
@@ -305,13 +320,13 @@ namespace Turbocharged.NSQ
                 throw new NotSupportedException("Authorization is not supported");
             }
 
-            SendCommand(stream, new Subscribe(_options.Topic, _options.Channel));
+            SendCommandToStream(stream, new Subscribe(_options.Topic, _options.Channel));
         }
 
         IdentifyResponse Identify(NetworkStream stream, FrameReader reader)
         {
             var identify = new Identify(_options);
-            SendCommand(stream, identify);
+            SendCommandToStream(stream, identify);
             var frame = reader.ReadFrame();
             if (frame.Type != FrameType.Result)
             {
@@ -320,16 +335,10 @@ namespace Turbocharged.NSQ
             return identify.ParseIdentifyResponse(frame.Data);
         }
 
-        void SendCommand(NetworkStream stream, ICommand command)
+        static void SendCommandToStream(NetworkStream stream, ICommand command)
         {
             var msg = command.ToByteArray();
             stream.Write(msg, 0, msg.Length);
-        }
-
-        internal Task SendCommandAsync(ICommand command)
-        {
-            var msg = command.ToByteArray();
-            return WriteAsync(msg);
         }
     }
 }

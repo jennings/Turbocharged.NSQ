@@ -54,6 +54,7 @@
   <ItemGroup>
     <Compile Include="ConsumerOptionFacts.cs" />
     <Compile Include="MessageConversionFacts.cs" />
+    <Compile Include="NsqLookupConsumerFacts.cs" />
     <Compile Include="NsqProducerFacts.cs" />
     <Compile Include="TcpConnectionFacts.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

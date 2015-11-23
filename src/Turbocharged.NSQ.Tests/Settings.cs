@@ -35,5 +35,23 @@ namespace Turbocharged.NSQ.Tests
                 return int.Parse(httpPortStr ?? ConfigurationManager.AppSettings["NSQ.HttpPort"]);
             }
         }
+
+        public static string LookupHostName
+        {
+            get
+            {
+                var hostname = Environment.GetEnvironmentVariable("NSQLOOKUPD_HOSTNAME");
+                return hostname ?? ConfigurationManager.AppSettings["Lookup.Hostname"];
+            }
+        }
+
+        public static int LookupPort
+        {
+            get
+            {
+                var tcpPortStr = Environment.GetEnvironmentVariable("NSQLOOKUPD_TCP_PORT");
+                return int.Parse(tcpPortStr ?? ConfigurationManager.AppSettings["Lookup.Port"]);
+            }
+        }
     }
 }

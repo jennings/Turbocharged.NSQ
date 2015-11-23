@@ -41,10 +41,17 @@ namespace TestClient
             var messages = GenerateMessages(count).ToList();
             for (int i = 0; i < count; i++)
             {
-                tasks[i] = Publishmessage(producer, topic, messages[i]);
+                tasks[i] = PublishMessageAsync(producer, topic, messages[i]);
             }
-            await Task.WhenAll(tasks);
-            StatusLabel.Text = "Done! (Idle)";
+            try
+            {
+                await Task.WhenAll(tasks);
+                StatusLabel.Text = "Done! (Idle)";
+            }
+            catch (Exception ex)
+            {
+                StatusLabel.Text = "FAILED: " + ex.Message;
+            }
         }
 
         IEnumerable<MessageBody> GenerateMessages(int count)
@@ -69,12 +76,18 @@ namespace TestClient
             var messages = GenerateMessages(count).ToArray();
 
             StatusLabel.Text = "Publishing";
-            await producer.PublishAsync(topic, messages);
-
-            StatusLabel.Text = "Done! (Idle)";
+            try
+            {
+                await producer.PublishAsync(topic, messages);
+                StatusLabel.Text = "Done! (Idle)";
+            }
+            catch (Exception ex)
+            {
+                StatusLabel.Text = "FAILED: " + ex.Message;
+            }
         }
 
-        async Task Publishmessage(NsqProducer producer, Topic topic, byte[] message)
+        async Task PublishMessageAsync(NsqProducer producer, Topic topic, byte[] message)
         {
             await producer.PublishAsync(topic, message);
             StatusLabel.Text = "Published message: " + BitConverter.ToString(message);

@@ -53,7 +53,8 @@ namespace Turbocharged.NSQ.Tests
 
             // Now try to receive anything
             bool receivedData = false;
-            conn = NsqTcpConnection.Connect(endPoint, options, async msg =>
+            conn = new NsqTcpConnection(endPoint, options);
+            await conn.ConnectAndWaitAsync(async msg =>
             {
                 receivedData = true;
                 await msg.FinishAsync();
