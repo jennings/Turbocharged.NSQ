@@ -264,7 +264,16 @@ namespace Turbocharged.NSQ
                         }
                         else if (frame.Type == FrameType.Error)
                         {
-                            OnInternalMessage("Received error. Length = {0}", frame.MessageSize);
+                            string errorString;
+                            try
+                            {
+                                errorString = Encoding.ASCII.GetString(frame.Data);
+                            }
+                            catch
+                            {
+                                errorString = BitConverter.ToString(frame.Data);
+                            }
+                            OnInternalMessage("Received error. Message = {0}", errorString);
                         }
                         else
                         {
