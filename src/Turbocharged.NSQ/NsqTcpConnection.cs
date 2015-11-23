@@ -85,8 +85,6 @@ namespace Turbocharged.NSQ
         /// <summary>
         /// Creates a new instance and connects to an nsqd instance.
         /// </summary>
-        /// <param name="endPoint">The address of the nsqd instance.</param>
-        /// <param name="options">Options for the connection.</param>
         /// <param name="handler">The delegate used to handle delivered messages.</param>
         /// <returns>A connected NSQ connection.</returns>
         public void Connect(MessageHandler handler)
