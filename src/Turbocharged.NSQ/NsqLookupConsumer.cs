@@ -206,6 +206,9 @@ namespace Turbocharged.NSQ
         // I need a better name for this
         async Task SetMaxInFlightWithoutWaitingForInitialConnectionAsync(int maxInFlight)
         {
+            if (maxInFlight < 0)
+                throw new ArgumentOutOfRangeException("maxInFlight", "MaxInFlight must be non-negative.");
+
             List<NsqTcpConnection> connections;
             lock (_connections)
             {
@@ -215,13 +218,19 @@ namespace Turbocharged.NSQ
             if (connections.Count == 0) return;
 
             int maxInFlightPerServer = maxInFlight / connections.Count;
-            int leftover = maxInFlight - (maxInFlightPerServer * connections.Count);
+            int remainder = maxInFlight % connections.Count;
 
             var tasks = new List<Task>(connections.Count);
             foreach (var connection in connections)
             {
                 int max = maxInFlightPerServer;
-                if (leftover > 0) max += leftover--;
+                if (remainder > 0)
+                {
+                    remainder -= 1;
+                    if (max < int.MaxValue)
+                        max += 1;
+                }
+
                 var setMaxTask = connection.SetMaxInFlightAsync(max)
                     .ContinueWith(t =>
                     {
