@@ -1,0 +1,13 @@
+version: 1.0.{build}
+configuration: Release
+
+before_build:
+  - cmd: >-
+      cd src
+      dotnet restore
+
+build:
+  verbosity: minimal
+
+artifacts:
+  - path: '*.nupkg'
