@@ -222,7 +222,8 @@ namespace Turbocharged.NSQ
                                 }
 
                                 OnInternalMessage("TCP client starting");
-                                client = new TcpClient(_endPoint.Host, _endPoint.Port);
+                                client = new TcpClient();
+                                client.ConnectAsync(_endPoint.Host, _endPoint.Port).Wait();
                                 cancellationRegistration = cancellationToken.Register(() => ((IDisposable)client).Dispose(), false);
                                 Connected = true;
                                 OnInternalMessage("TCP client started");
@@ -264,7 +265,11 @@ namespace Turbocharged.NSQ
                             OnInternalMessage("Received message. Length = {0}", frame.MessageSize);
                             var message = new Message(frame, this);
                             // TODO: Rethink this
-                            ThreadPool.QueueUserWorkItem(new WaitCallback(_ => { handler(message); }));
+                            Task.Run(() =>
+                            {
+                                try { handler(message); }
+                                catch (Exception) { } // TODO
+                            });
                         }
                         else if (frame.Type == FrameType.Error)
                         {

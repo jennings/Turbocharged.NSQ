@@ -56,7 +56,7 @@ namespace Turbocharged.NSQ
         public bool Equals(LookupAddress other)
         {
             return HttpPort == other.HttpPort
-                && string.Equals(HostName, other.HostName, StringComparison.InvariantCultureIgnoreCase);
+                && string.Equals(HostName, other.HostName, StringComparison.OrdinalIgnoreCase);
         }
     }
 
@@ -118,8 +118,8 @@ namespace Turbocharged.NSQ
         {
             return HttpPort == other.HttpPort
                 && TcpPort == other.TcpPort
-                && string.Equals(BroadcastAddress, other.BroadcastAddress, StringComparison.InvariantCultureIgnoreCase)
-                && string.Equals(HostName, other.HostName, StringComparison.InvariantCultureIgnoreCase);
+                && string.Equals(BroadcastAddress, other.BroadcastAddress, StringComparison.OrdinalIgnoreCase)
+                && string.Equals(HostName, other.HostName, StringComparison.OrdinalIgnoreCase);
         }
     }
 }

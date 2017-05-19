@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Net.Http;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -16,8 +17,10 @@ namespace Turbocharged.NSQ
     /// </summary>
     public class NsqLookup
     {
-        readonly WebClient _webClient = new WebClient();
-        readonly SemaphoreSlim _webClientLock = new SemaphoreSlim(1, 1);
+        readonly string _host;
+        readonly int _port;
+        readonly HttpClient _httpClient;
+        readonly SemaphoreSlim _httpClientLock = new SemaphoreSlim(1, 1);
 
         /// <summary>
         /// Creates a new instance of <c>NsqLookup</c>.
@@ -25,13 +28,21 @@ namespace Turbocharged.NSQ
         /// <param name="host">The host name or IP address of the nsqlookupd instance.</param>
         /// <param name="port">The HTTP port of the nsqlookupd instance.</param>
         public NsqLookup(string host, int port)
+            : this(host, port, Defaults.HttpClient.Value)
         {
-            _webClient.BaseAddress = new UriBuilder()
-            {
-                Scheme = "http",
-                Host = host,
-                Port = port,
-            }.ToString();
+        }
+
+        /// <summary>
+        /// Creates a new instance of <c>NsqLookup</c>.
+        /// </summary>
+        /// <param name="host">The host name or IP address of the nsqlookupd instance.</param>
+        /// <param name="port">The HTTP port of the nsqlookupd instance.</param>
+        /// <param name="httpClient">The HttpClient to use for requests.</param>
+        public NsqLookup(string host, int port, HttpClient httpClient)
+        {
+            _host = host;
+            _port = port;
+            _httpClient = httpClient;
         }
 
         /// <summary>
@@ -155,11 +166,12 @@ namespace Turbocharged.NSQ
 
         async Task<T> RequestAsync<T>(string url, Func<JObject, T> handler)
         {
-            await _webClientLock.WaitAsync().ConfigureAwait(false);
+            await _httpClientLock.WaitAsync().ConfigureAwait(false);
             try
             {
-                string data = await _webClient.DownloadStringTaskAsync(url).ConfigureAwait(false);
-                var response = JObject.Parse(data);
+                var responseMessage = await _httpClient.GetAsync(url).ConfigureAwait(false);
+                var content = await responseMessage.Content.ReadAsStringAsync().ConfigureAwait(false);
+                var response = JObject.Parse(content);
                 if (response["data"] == null)
                 {
                     return default(T);
@@ -167,13 +179,13 @@ namespace Turbocharged.NSQ
 
                 return handler(response);
             }
-            catch (WebException)
+            catch (Exception)
             {
                 return default(T);
             }
             finally
             {
-                _webClientLock.Release();
+                _httpClientLock.Release();
             }
         }
     }

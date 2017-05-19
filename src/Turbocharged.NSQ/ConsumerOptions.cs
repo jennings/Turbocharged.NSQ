@@ -81,7 +81,7 @@ namespace Turbocharged.NSQ
             LookupEndPoints = new HashSet<DnsEndPoint>();
 
             ClientId = "Turbocharged.NSQ";
-            HostName = Environment.MachineName;
+            HostName = System.Net.Dns.GetHostName();
             LookupPeriod = TimeSpan.FromSeconds(15);
             ReconnectionDelay = TimeSpan.FromSeconds(1);
             ReconnectionMaxDelay = TimeSpan.FromSeconds(30);
@@ -168,7 +168,7 @@ namespace Turbocharged.NSQ
                         return new[] { LOOKUPD_KEY, part[0] };
                 })
                 .ToLookup(
-                    part => part[0].ToLowerInvariant().Trim(),
+                    part => part[0].ToLower().Trim(),
                     part => part[1].Trim());
 
         }

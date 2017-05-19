@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Net.Http;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -16,24 +17,29 @@ namespace Turbocharged.NSQ
     /// </summary>
     public sealed class NsqProducer
     {
-        readonly WebClient _webClient = new WebClient();
-        readonly SemaphoreSlim _webClientLock = new SemaphoreSlim(1, 1);
+        readonly string _host;
+        readonly int _port;
+        readonly HttpClient _httpClient;
+        readonly SemaphoreSlim _httpClientLock = new SemaphoreSlim(1, 1);
 
         readonly static byte[] EMPTY = new byte[0];
+
+        public NsqProducer(string host, int port)
+            : this(host, port, Defaults.HttpClient.Value)
+        {
+        }
 
         /// <summary>
         /// Creates a new client.
         /// </summary>
         /// <param name="host">The host name or IP address of the nsqd instance.</param>
         /// <param name="port">The HTTP port of the nsqd instance.</param>
-        public NsqProducer(string host, int port)
+        /// <param name="httpClient"></param>
+        public NsqProducer(string host, int port, HttpClient httpClient)
         {
-            _webClient.BaseAddress = new UriBuilder()
-            {
-                Scheme = "http",
-                Host = host,
-                Port = port,
-            }.ToString();
+            _host = host;
+            _port = port;
+            _httpClient = httpClient;
         }
 
         /// <summary>
@@ -182,43 +188,28 @@ namespace Turbocharged.NSQ
 
         async Task<T> PostAsync<T>(string url, byte[] data, Func<byte[], T> handler)
         {
-            await _webClientLock.WaitAsync().ConfigureAwait(false);
+            await _httpClientLock.WaitAsync().ConfigureAwait(false);
             try
             {
-                byte[] response = await _webClient.UploadDataTaskAsync(url, data).ConfigureAwait(false);
-                return handler(response);
-            }
-            catch (WebException ex)
-            {
-                if (ex.Response == null)
-                    throw;
-
-                // Even if we get a 4xx, we should be able to continue
-                using (var responseStream = ex.Response.GetResponseStream())
-                {
-                    // Even 4xx errors should send us content
-                    var responseLength = (int)responseStream.Length;
-                    if (responseLength == 0)
-                        throw;
-
-                    var response = new byte[responseLength];
-                    responseStream.Read(response, 0, responseLength);
-                    return handler(response);
-                }
+                var content = new ByteArrayContent(data);
+                var responseMessage = await _httpClient.PostAsync(url, content).ConfigureAwait(false);
+                var responseContent = await responseMessage.Content.ReadAsByteArrayAsync().ConfigureAwait(false);
+                return handler(responseContent);
             }
             finally
             {
-                _webClientLock.Release();
+                _httpClientLock.Release();
             }
         }
 
         async Task<T> GetAsync<T>(string url, Func<JObject, T> handler)
         {
-            await _webClientLock.WaitAsync().ConfigureAwait(false);
+            await _httpClientLock.WaitAsync().ConfigureAwait(false);
             try
             {
-                string data = await _webClient.DownloadStringTaskAsync(url).ConfigureAwait(false);
-                var response = JObject.Parse(data);
+                var responseMessage = await _httpClient.GetAsync(url).ConfigureAwait(false);
+                var responseContent = await responseMessage.Content.ReadAsStringAsync().ConfigureAwait(false);
+                var response = JObject.Parse(responseContent);
                 if (response["data"] == null)
                 {
                     return default(T);
@@ -228,7 +219,7 @@ namespace Turbocharged.NSQ
             }
             finally
             {
-                _webClientLock.Release();
+                _httpClientLock.Release();
             }
         }
     }
