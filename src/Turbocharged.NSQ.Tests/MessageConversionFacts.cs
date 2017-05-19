@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -9,7 +10,7 @@ namespace Turbocharged.NSQ.Tests
 {
     public class MessageConversionFacts
     {
-        static string SAMPLE_TEXT_FILE = System.IO.Path.Combine(Environment.CurrentDirectory, "UTF-8-sample-text.txt");
+        static string SAMPLE_TEXT_FILE = System.IO.Path.Combine(Directory.GetCurrentDirectory(), "UTF-8-sample-text.txt");
 
         public static TheoryData<string> SampleTextAsString()
         {

@@ -1,13 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Configuration;
-using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace Turbocharged.NSQ.Tests
 {
@@ -18,9 +17,11 @@ namespace Turbocharged.NSQ.Tests
         DnsEndPoint endPoint;
         ConsumerOptions options;
         NsqProducer prod;
+        ITestOutputHelper Output;
 
-        public TcpConnectionFacts()
+        public TcpConnectionFacts(ITestOutputHelper output)
         {
+            Output = output;
             endPoint = new DnsEndPoint(Settings.NsqdHostName, Settings.NsqdTcpPort);
             options = new ConsumerOptions();
             prod = new NsqProducer(Settings.NsqdHostName, Settings.NsqdHttpPort);
@@ -71,7 +72,7 @@ namespace Turbocharged.NSQ.Tests
             options.Topic = "foo";
             options.Channel = "bar";
             var conn = new NsqTcpConnection(endPoint, options);
-            conn.InternalMessages += (_, e) => Trace.WriteLine(e.Message);
+            conn.InternalMessages += (_, e) => Output.WriteLine(e.Message);
             await conn.ConnectAndWaitAsync(msg => msg.FinishAsync());
             conn.Dispose();
         }
@@ -91,7 +92,7 @@ namespace Turbocharged.NSQ.Tests
 
             using (conn)
             {
-                conn.InternalMessages += (_, e) => Trace.WriteLine(e.Message);
+                conn.InternalMessages += (_, e) => Output.WriteLine(e.Message);
                 await conn.ConnectAndWaitAsync(async msg =>
                 {
                     await msg.FinishAsync();
@@ -122,7 +123,7 @@ namespace Turbocharged.NSQ.Tests
 
             using (conn)
             {
-                conn.InternalMessages += (_, e) => Trace.WriteLine(e.Message);
+                conn.InternalMessages += (_, e) => Output.WriteLine(e.Message);
                 await conn.ConnectAndWaitAsync(async msg =>
                 {
                     await msg.FinishAsync().ConfigureAwait(false);

@@ -8,6 +8,7 @@ using Xunit;
 
 namespace Turbocharged.NSQ.Tests
 {
+#if FALSE
     public class MiscellaneousFacts
     {
         [Fact]
@@ -63,4 +64,5 @@ namespace Turbocharged.NSQ.Tests
             return method.GetCustomAttributes(typeof(TAttribute), false).Any();
         }
     }
+#endif
 }

@@ -53,7 +53,7 @@ namespace Turbocharged.NSQ
             return RequestListAsync("/lookup?topic=" + topic, response =>
             {
                 return
-                    ((JArray)response["data"]["producers"])
+                    ((JArray)response["producers"])
                     .Select(producer => new NsqAddress(
                             (string)producer["broadcast_address"],
                             (string)producer["hostname"],
@@ -70,7 +70,7 @@ namespace Turbocharged.NSQ
         {
             return RequestListAsync("/topics", response =>
             {
-                return response["data"]["topics"]
+                return response["topics"]
                     .Select(t => new Topic((string)t))
                     .ToList();
             });
@@ -84,7 +84,7 @@ namespace Turbocharged.NSQ
         {
             return RequestListAsync("/channels?topic=" + topic, response =>
             {
-                return response["data"]["channels"]
+                return response["channels"]
                     .Select(t => new Channel((string)t))
                     .ToList();
             });
@@ -98,7 +98,7 @@ namespace Turbocharged.NSQ
             return RequestListAsync("/nodes", response =>
             {
                 return
-                    ((JArray)response["data"]["producers"])
+                    ((JArray)response["producers"])
                     .Select(producer => new NsqAddress(
                             (string)producer["broadcast_address"],
                             (string)producer["hostname"],
@@ -158,35 +158,39 @@ namespace Turbocharged.NSQ
             });
         }
 
-        async Task<List<T>> RequestListAsync<T>(string url, Func<JObject, List<T>> handler)
+        async Task<List<T>> RequestListAsync<T>(string path, Func<JObject, List<T>> handler)
         {
-            var result = await RequestAsync(url, handler).ConfigureAwait(false);
+            var result = await RequestAsync(path, handler).ConfigureAwait(false);
             return result ?? new List<T>();
         }
 
-        async Task<T> RequestAsync<T>(string url, Func<JObject, T> handler)
+        async Task<T> RequestAsync<T>(string path, Func<JObject, T> handler)
         {
             await _httpClientLock.WaitAsync().ConfigureAwait(false);
             try
             {
-                var responseMessage = await _httpClient.GetAsync(url).ConfigureAwait(false);
+                var responseMessage = await _httpClient.GetAsync(BuildUrl(path)).ConfigureAwait(false);
                 var content = await responseMessage.Content.ReadAsStringAsync().ConfigureAwait(false);
                 var response = JObject.Parse(content);
-                if (response["data"] == null)
+                if (responseMessage.IsSuccessStatusCode)
                 {
-                    return default(T);
+                    return handler(response);
+                }
+                else
+                {
+                    throw new Exception((string)response["message"] ?? "Unknown response");
                 }
 
-                return handler(response);
-            }
-            catch (Exception)
-            {
-                return default(T);
             }
             finally
             {
                 _httpClientLock.Release();
             }
+        }
+
+        string BuildUrl(string path)
+        {
+            return $"http://{_host}:{_port}{path}";
         }
     }
 }

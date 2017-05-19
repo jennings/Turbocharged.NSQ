@@ -1,0 +1,7 @@
+{
+    "Lookup.Hostname": "localhost",
+    "Lookup.Port": "4161",
+    "NSQ.Hostname": "localhost",
+    "NSQ.TcpPort": "4150",
+    "NSQ.HttpPort": "4151"
+}

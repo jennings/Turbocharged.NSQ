@@ -135,7 +135,7 @@ namespace Turbocharged.NSQ
         /// </summary>
         public Task<NsqStatistics> StatisticsAsync()
         {
-            return GetAsync("/stats?format=json", response => response["data"].ToObject<NsqStatistics>());
+            return GetAsync("/stats?format=json", response => response.ToObject<NsqStatistics>());
         }
 
         /// <summary>
@@ -186,13 +186,13 @@ namespace Turbocharged.NSQ
             return PostAsync<T>(url, EMPTY, handler);
         }
 
-        async Task<T> PostAsync<T>(string url, byte[] data, Func<byte[], T> handler)
+        async Task<T> PostAsync<T>(string path, byte[] data, Func<byte[], T> handler)
         {
             await _httpClientLock.WaitAsync().ConfigureAwait(false);
             try
             {
                 var content = new ByteArrayContent(data);
-                var responseMessage = await _httpClient.PostAsync(url, content).ConfigureAwait(false);
+                var responseMessage = await _httpClient.PostAsync(BuildUrl(path), content).ConfigureAwait(false);
                 var responseContent = await responseMessage.Content.ReadAsByteArrayAsync().ConfigureAwait(false);
                 return handler(responseContent);
             }
@@ -202,25 +202,33 @@ namespace Turbocharged.NSQ
             }
         }
 
-        async Task<T> GetAsync<T>(string url, Func<JObject, T> handler)
+        async Task<T> GetAsync<T>(string path, Func<JObject, T> handler)
         {
             await _httpClientLock.WaitAsync().ConfigureAwait(false);
             try
             {
-                var responseMessage = await _httpClient.GetAsync(url).ConfigureAwait(false);
+                var responseMessage = await _httpClient.GetAsync(BuildUrl(path)).ConfigureAwait(false);
                 var responseContent = await responseMessage.Content.ReadAsStringAsync().ConfigureAwait(false);
                 var response = JObject.Parse(responseContent);
-                if (response["data"] == null)
+                if (responseMessage.IsSuccessStatusCode)
                 {
-                    return default(T);
+                    return handler(response);
+                }
+                else
+                {
+                    throw new Exception((string)response["message"] ?? "Unknown response");
                 }
 
-                return handler(response);
             }
             finally
             {
                 _httpClientLock.Release();
             }
+        }
+
+        string BuildUrl(string path)
+        {
+            return $"http://{_host}:{_port}{path}";
         }
     }
 }

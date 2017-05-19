@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace Turbocharged.NSQ.Tests
 {
@@ -14,9 +15,11 @@ namespace Turbocharged.NSQ.Tests
         DnsEndPoint lookupEndPoint;
         ConsumerOptions options;
         NsqProducer prod;
+        ITestOutputHelper Output;
 
-        public NsqLookupConsumerFacts()
+        public NsqLookupConsumerFacts(ITestOutputHelper output)
         {
+            Output = output;
             lookupEndPoint = new DnsEndPoint(Settings.LookupHostName, Settings.LookupPort);
             options = new ConsumerOptions
             {
@@ -51,7 +54,7 @@ namespace Turbocharged.NSQ.Tests
 
         void OutputMessage(object sender, InternalMessageEventArgs e)
         {
-            System.Diagnostics.Debug.WriteLine(e.Message);
+            Output.WriteLine(e.Message);
         }
     }
 }
