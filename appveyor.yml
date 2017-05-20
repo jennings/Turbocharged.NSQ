@@ -12,7 +12,7 @@ test_script:
   - cmd: dotnet test src/Turbocharged.NSQ.Tests/Turbocharged.NSQ.Tests.csproj
 
 after_build:
-  - cmd: dotnet pack -c $(configuration) src/Turbocharged.NSQ/Turbocharged.NSQ.csproj
+  - cmd: dotnet pack -c Release src/Turbocharged.NSQ/Turbocharged.NSQ.csproj
 
 artifacts:
   - path: '**/*.nupkg'
