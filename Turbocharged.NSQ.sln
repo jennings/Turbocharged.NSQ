@@ -3,9 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.26124.0
 MinimumVisualStudioVersion = 15.0.26124.0
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Turbocharged.NSQ", "Turbocharged.NSQ\Turbocharged.NSQ.csproj", "{A74D02E0-9F96-42E8-9D45-D28CFDFDE5E4}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Turbocharged.NSQ", "src\Turbocharged.NSQ\Turbocharged.NSQ.csproj", "{A74D02E0-9F96-42E8-9D45-D28CFDFDE5E4}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Turbocharged.NSQ.Tests", "Turbocharged.NSQ.Tests\Turbocharged.NSQ.Tests.csproj", "{53A62B3F-7AB2-4F4C-94EC-C185ED4C1402}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Turbocharged.NSQ.Tests", "src\Turbocharged.NSQ.Tests\Turbocharged.NSQ.Tests.csproj", "{53A62B3F-7AB2-4F4C-94EC-C185ED4C1402}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

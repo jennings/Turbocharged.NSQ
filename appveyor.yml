@@ -3,18 +3,16 @@ image: Visual Studio 2017
 configuration: Release
 
 before_build:
-  - cmd: |-
-      cd src
-      dotnet restore
+  - cmd: dotnet restore
 
 build:
   verbosity: minimal
 
-after_build:
-  - cmd: dotnet pack Turbocharged.NSQ/Turbocharged.NSQ.csproj
-
 test_script:
-  - cmd: dotnet test Turbocharged.NSQ.Tests/Turbocharged.NSQ.Tests.csproj
+  - cmd: dotnet test src/Turbocharged.NSQ.Tests/Turbocharged.NSQ.Tests.csproj
+
+after_build:
+  - cmd: dotnet pack -c $(configuration) src/Turbocharged.NSQ/Turbocharged.NSQ.csproj
 
 artifacts:
   - path: '**/*.nupkg'
