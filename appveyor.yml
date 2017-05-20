@@ -11,5 +11,8 @@ before_build:
 build:
   verbosity: minimal
 
+test_script:
+  - cmd: dotnet test src/Turbocharged.NSQ.Tests/Turbocharged.NSQ.Tests.csproj
+
 artifacts:
   - path: '*.nupkg'
