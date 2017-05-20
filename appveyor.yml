@@ -2,21 +2,19 @@ version: 1.0.{build}
 image: Visual Studio 2017
 configuration: Release
 
-init:
-  - ps: iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
-
 before_build:
-  - cmd: >-
+  - cmd: |-
       cd src
-
       dotnet restore
 
 build:
   verbosity: minimal
 
+after_build:
+  - cmd: dotnet pack Turbocharged.NSQ/Turbocharged.NSQ.csproj
+
 test_script:
-  - cmd: >-
-      dotnet test Turbocharged.NSQ.Tests/Turbocharged.NSQ.Tests.csproj
+  - cmd: dotnet test Turbocharged.NSQ.Tests/Turbocharged.NSQ.Tests.csproj
 
 artifacts:
-  - path: '*.nupkg'
+  - path: '**/*.nupkg'
