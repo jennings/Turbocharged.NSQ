@@ -1,0 +1,20 @@
+version: '3'
+services:
+
+  nsqlookupd:
+    image: nsqio/nsq:v1.2.0
+    command: /nsqlookupd
+    ports:
+      - "4160:4160"
+      - "4161:4161"
+  nsqd:
+    image: nsqio/nsq:v1.2.0
+    command: >-
+      /nsqd
+      --lookupd-tcp-address=nsqlookupd:4160
+      --broadcast-address=localhost
+    depends_on:
+      - nsqlookupd
+    ports:
+      - "4150:4150"
+      - "4151:4151"
