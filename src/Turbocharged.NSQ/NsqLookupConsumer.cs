@@ -252,7 +252,7 @@ namespace Turbocharged.NSQ
             {
                 _disposed = true;
 
-                _lookupTimer.Dispose();
+                _lookupTimer?.Dispose();
 
                 foreach (var connection in _connections.Values)
                     connection.Dispose();
