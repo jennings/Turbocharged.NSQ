@@ -2,13 +2,13 @@ version: '3'
 services:
 
   nsqlookupd:
-    image: nsqio/nsq:v1.2.0
+    image: nsqio/nsq:${NSQ_TAG:-v1.2.0}
     command: /nsqlookupd
     ports:
       - "4160:4160"
       - "4161:4161"
   nsqd:
-    image: nsqio/nsq:v1.2.0
+    image: nsqio/nsq:${NSQ_TAG:-v1.2.0}
     command: >-
       /nsqd
       --lookupd-tcp-address=nsqlookupd:4160

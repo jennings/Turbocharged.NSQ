@@ -1,11 +1,16 @@
 name: ASP.NET Core CI
 
-on: [push]
+on: [push, pull_request]
 
 jobs:
   build:
 
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        nsq:
+          - v1.0.0-compat
+          - v1.2.0
 
     steps:
     - uses: actions/checkout@v1
@@ -20,6 +25,8 @@ jobs:
 
     - name: Start nsqd
       run: docker-compose up -d
+      env:
+        NSQ_TAG: ${{ matrix.nsq }}
 
     - name: Run tests
       run: dotnet test
