@@ -34,6 +34,8 @@ namespace Turbocharged.NSQ.Tests
             options.Topic = "foo";
             options.Channel = "bar";
             var tcs = new TaskCompletionSource<bool>();
+            await prod.CreateTopicAsync(options.Topic);
+
             using (var consumer = new NsqLookupConsumer(options))
             {
                 consumer.InternalMessages += OutputMessage;
